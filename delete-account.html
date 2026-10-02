@@ -1,43 +1,98 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8">
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Delete your Toos account</title>
-<style>
-  body{margin:0;background:#f6f4ee;color:#1d2a24;font:16px/1.5 -apple-system,Segoe UI,Roboto,sans-serif}
-  main{max-width:640px;margin:0 auto;padding:32px 20px 56px}
-  .eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#6b7f74;margin:0 0 6px}
-  h1{font-size:26px;margin:0 0 20px} h2{font-size:18px;margin:28px 0 8px}
-  ol,ul{padding-left:22px} li{margin:4px 0}
-  .card{background:#fff;border:1px solid #d5ddd8;border-radius:14px;padding:16px 18px;margin:12px 0}
-  a{color:#2f6a4f}
-  .muted{color:#6b7f74;font-size:14px}
-</style></head><body><main>
-<p class="eyebrow">Toos</p>
-<h1>Delete your Toos account</h1>
-<p>You can delete your Toos account at any time, from the app or by asking us. Deletion is permanent.</p>
+<title>Delete your account · Toos</title>
+<meta name="description" content="How to delete your Toos account from the app or by email, what is deleted, and what is kept.">
+<meta name="theme-color" content="#2e6b4f">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
 
-<h2>From the app (fastest)</h2>
-<div class="card"><ol>
-  <li>Open Toos and sign in.</li>
-  <li>Go to <b>Me</b>, then tap the <b>Settings</b> gear at the top right.</li>
-  <li>Under <b>Account</b>, tap <b>Delete account</b> and confirm.</li>
-</ol><p class="muted">Your account and its data are removed immediately, and the app returns to the sign-in screen.</p></div>
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="index.html">
+      <svg class="mark" viewBox="14 14 80 80" aria-hidden="true"><circle cx="54" cy="54" r="40" fill="#2e6b4f"/><g fill="#fff"><path fill-rule="evenodd" d="M54,34 a20,20 0 1,0 0.01,0 z M54,40 a14,14 0 1,1 -0.01,0 z"/><path d="M54,45 a9,9 0 1,0 0.01,0 z"/><path d="M30,36 l0,10 a4,4 0 0 0 8,0 l0,-10 l-2.5,0 l0,9 l-1.5,0 l0,-9 l-2.5,0 l0,9 l-1.5,0 l0,-9 z M33,50 l2,0 l0,20 l-2,0 z"/><path d="M74,36 c4,4 4,12 0,16 l0,18 l2.5,0 l0,-34 z"/></g></svg>
+      Toos
+    </a>
+    <nav class="topnav">
+      <a href="privacy.html">Privacy policy</a>
+      <a href="delete-account.html" aria-current="page">Delete account</a>
+    </nav>
+  </div>
+</header>
 
-<h2>Without the app</h2>
-<div class="card"><p>If you no longer have the app or cannot sign in, email <a href="mailto:hitooscoffee@gmail.com?subject=Delete%20my%20Toos%20account">hitooscoffee@gmail.com</a> from the address you signed up with, with the subject “Delete my Toos account”. We will confirm by reply to that address before deleting, and complete the deletion within 30 days.</p></div>
+<section class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Your account</p>
+    <h1>Delete your Toos account</h1>
+    <p class="lead">You can delete your Toos account at any time, from the app or by asking us. Deletion is permanent.</p>
+  </div>
+</section>
 
-<h2>What is deleted</h2>
-<ul>
-  <li>Your account, sign-in credentials and profile (name, area, photo).</li>
-  <li>Your reviews and review photos, saved places and “saved places” visibility setting.</li>
-  <li>Any shop-owner claim, the proof photos you sent with it, your owner edits and owner replies.</li>
-  <li>Suggestions you sent for other places.</li>
-</ul>
+<main class="wrap layout">
+  <nav class="toc" aria-label="On this page">
+    <h2>On this page</h2>
+    <ol>
+      <li><a href="#in-app">From the app</a></li>
+      <li><a href="#by-email">Without the app</a></li>
+      <li><a href="#deleted">What is deleted</a></li>
+      <li><a href="#kept">What is kept</a></li>
+    </ol>
+  </nav>
 
-<h2>What is kept</h2>
-<ul>
-  <li>Places you added to the Toos directory stay listed, without your name, so other people can still find them. Their photos stay with them.</li>
-  <li>Nothing else. We do not keep a copy of your account for marketing or analytics. Routine encrypted backups expire within 30 days.</li>
-</ul>
+  <article class="content">
 
-<p class="muted">Questions: <a href="mailto:hitooscoffee@gmail.com">hitooscoffee@gmail.com</a></p>
-</main></body></html>
+    <section id="in-app" class="card">
+      <h2>From the app <span class="num">fastest</span></h2>
+      <ol class="steps">
+        <li>Open Toos and sign in.</li>
+        <li>Go to <kbd class="ui">Me</kbd>, then tap the <kbd class="ui">Settings</kbd> gear at the top right.</li>
+        <li>Under <b>Account</b>, tap <kbd class="ui">Delete account</kbd> and confirm.</li>
+      </ol>
+      <p class="note">Your account and its data are removed immediately, and the app returns to the sign-in screen.</p>
+    </section>
+
+    <section id="by-email" class="card">
+      <h2>Without the app</h2>
+      <p>If you no longer have the app or cannot sign in, email us from the address you signed up with, with the subject “Delete my Toos account”. We will confirm by reply to that address before deleting, and complete the deletion within 30 days.</p>
+      <p style="margin-top:18px"><a class="button" href="mailto:hitooscoffee@gmail.com?subject=Delete%20my%20Toos%20account">Email hitooscoffee@gmail.com</a></p>
+    </section>
+
+    <div class="two-col">
+      <section id="deleted">
+        <h2>What is deleted</h2>
+        <ul class="checks">
+          <li>Your account, sign-in credentials and profile (name, area, photo).</li>
+          <li>Your reviews and review photos, saved places and “saved places” visibility setting.</li>
+          <li>Any shop-owner claim, the proof photos you sent with it, your owner edits and owner replies.</li>
+          <li>Suggestions you sent for other places.</li>
+        </ul>
+      </section>
+
+      <section id="kept">
+        <h2>What is kept</h2>
+        <ul class="checks no">
+          <li>Places you added to the Toos directory stay listed, without your name, so other people can still find them. Their photos stay with them.</li>
+          <li>Nothing else. We do not keep a copy of your account for marketing or analytics. Routine encrypted backups expire within 30 days.</li>
+        </ul>
+      </section>
+    </div>
+
+  </article>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Toos The Place Store · Questions: <a href="mailto:hitooscoffee@gmail.com">hitooscoffee@gmail.com</a></span>
+    <nav><a href="index.html">Home</a><a href="privacy.html">Privacy policy</a><a href="delete-account.html">Delete account</a></nav>
+  </div>
+</footer>
+
+</body>
+</html>
