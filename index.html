@@ -5,52 +5,116 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Toos — food discovery for Malaysia</title>
 <meta name="description" content="Toos is a food-discovery app for Malaysia: restaurants, cafés and coffee shops shared by real diners. Privacy policy and account deletion.">
-<meta name="theme-color" content="#2e6b4f">
+<meta name="theme-color" content="#6b1e2e">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Rubik+Mono+One&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<svg class="defs" aria-hidden="true" focusable="false"><filter id="rough" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="7" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.4 2.15" result="m"/><feComposite in="SourceGraphic" in2="m" operator="in"/></filter></svg>
+<a class="skip" href="#main">Skip to content</a>
 
-<header class="topbar">
-  <div class="wrap">
-    <a class="brand" href="index.html">
-      <svg class="mark" viewBox="14 14 80 80" aria-hidden="true"><circle cx="54" cy="54" r="40" fill="#2e6b4f"/><g fill="#fff"><path fill-rule="evenodd" d="M54,34 a20,20 0 1,0 0.01,0 z M54,40 a14,14 0 1,1 -0.01,0 z"/><path d="M54,45 a9,9 0 1,0 0.01,0 z"/><path d="M30,36 l0,10 a4,4 0 0 0 8,0 l0,-10 l-2.5,0 l0,9 l-1.5,0 l0,-9 l-2.5,0 l0,9 l-1.5,0 l0,-9 z M33,50 l2,0 l0,20 l-2,0 z"/><path d="M74,36 c4,4 4,12 0,16 l0,18 l2.5,0 l0,-34 z"/></g></svg>
-      Toos
-    </a>
-    <nav class="topnav">
-      <a href="privacy.html">Privacy policy</a>
-      <a href="delete-account.html">Delete account</a>
-    </nav>
-  </div>
-</header>
+<div class="cover-band">
+  <header class="topbar">
+    <div class="wrap">
+      <a class="brand" href="index.html"><svg class="mark" viewBox="14 14 80 80" aria-hidden="true"><circle cx="54" cy="54" r="40" fill="#2e6b4f"/><g fill="#fff"><path fill-rule="evenodd" d="M54,34 a20,20 0 1,0 0.01,0 z M54,40 a14,14 0 1,1 -0.01,0 z"/><path d="M54,45 a9,9 0 1,0 0.01,0 z"/><path d="M30,36 l0,10 a4,4 0 0 0 8,0 l0,-10 l-2.5,0 l0,9 l-1.5,0 l0,-9 l-2.5,0 l0,9 l-1.5,0 l0,-9 z M33,50 l2,0 l0,20 l-2,0 z"/><path d="M74,36 c4,4 4,12 0,16 l0,18 l2.5,0 l0,-34 z"/></g></svg>Toos</a>
+      <nav class="topnav" aria-label="Main">
+        <a href="privacy.html">Privacy policy</a>
+        <a href="delete-account.html">Delete account</a>
+      </nav>
+    </div>
+  </header>
 
-<main class="wrap landing">
-  <svg class="mark-lg" viewBox="14 14 80 80" aria-hidden="true"><circle cx="54" cy="54" r="40" fill="#2e6b4f"/><g fill="#fff"><path fill-rule="evenodd" d="M54,34 a20,20 0 1,0 0.01,0 z M54,40 a14,14 0 1,1 -0.01,0 z"/><path d="M54,45 a9,9 0 1,0 0.01,0 z"/><path d="M30,36 l0,10 a4,4 0 0 0 8,0 l0,-10 l-2.5,0 l0,9 l-1.5,0 l0,-9 l-2.5,0 l0,9 l-1.5,0 l0,-9 z M33,50 l2,0 l0,20 l-2,0 z"/><path d="M74,36 c4,4 4,12 0,16 l0,18 l2.5,0 l0,-34 z"/></g></svg>
-  <p class="eyebrow">Toos · Android</p>
-  <h1>Discover places loved by your community</h1>
-  <p class="lead">Restaurants, cafés and coffee shops across Malaysia, shared by real diners. Toos is made by Toos The Place Store.</p>
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <h1>Collect the places worth the trip</h1>
+        <p class="lead">Toos is a food-discovery app for Malaysia. Restaurants, cafés and coffee shops, shared by real diners, so every outing starts with somewhere good to eat.</p>
+        <p class="soon">Android app, coming soon to Google Play</p>
+      </div>
+      <div class="booklet" aria-hidden="true">
+        <svg class="mark" viewBox="14 14 80 80" aria-hidden="true"><circle cx="54" cy="54" r="40" fill="#2e6b4f"/><g fill="#fff"><path fill-rule="evenodd" d="M54,34 a20,20 0 1,0 0.01,0 z M54,40 a14,14 0 1,1 -0.01,0 z"/><path d="M54,45 a9,9 0 1,0 0.01,0 z"/><path d="M30,36 l0,10 a4,4 0 0 0 8,0 l0,-10 l-2.5,0 l0,9 l-1.5,0 l0,-9 l-2.5,0 l0,9 l-1.5,0 l0,-9 z M33,50 l2,0 l0,20 l-2,0 z"/><path d="M74,36 c4,4 4,12 0,16 l0,18 l2.5,0 l0,-34 z"/></g></svg>
+        <b>TOOS</b>
+        <span>Makan passport</span>
+        <i></i>
+      </div>
+    </div>
+  </section>
+</div>
 
-  <div class="tiles">
-    <a class="card tile" href="privacy.html">
-      <h2>Privacy policy</h2>
-      <p>What Toos stores, why, who else handles it, how long it is kept, and your rights.</p>
-    </a>
-    <a class="card tile" href="delete-account.html">
-      <h2>Delete your account</h2>
-      <p>Three taps in the app, or by email if you no longer have it.</p>
-    </a>
-  </div>
+<main id="main">
+  <section class="stamps-page" aria-labelledby="stamps-title">
+    <div class="wrap">
+      <div class="sheet">
+        <h2 class="title" id="stamps-title">The stamps on every place</h2>
+        <p class="intro">Each place in Toos carries a price band per person, and tags for what it is good for. Search with any of them.</p>
+        <ul class="stamps">
+          <li class="stamp round" style="--i:0;--r:-8deg"><span class="big">$</span>Under RM20<small>kopitiam, mamak, hawker</small></li>
+          <li class="stamp round green" style="--i:1;--r:5deg"><span class="big">$$</span>RM20 to RM40</li>
+          <li class="stamp round red" style="--i:2;--r:-3deg"><span class="big">$$$</span>Over RM40</li>
+          <li class="stamp rect blue" style="--i:3;--r:6deg">Halal options</li>
+          <li class="stamp rect" style="--i:4;--r:-5deg">Vegetarian</li>
+          <li class="stamp rect red" style="--i:5;--r:3deg">Brunch</li>
+          <li class="stamp rect green" style="--i:6;--r:-7deg">Outdoor</li>
+          <li class="stamp rect blue" style="--i:7;--r:4deg">Wifi</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="spread-sec" aria-label="Contributors and shop owners">
+    <div class="wrap">
+      <div class="spread">
+        <div class="sheet">
+          <h2>Points and titles</h2>
+          <p>Everything you add earns points, and your points earn a title shown next to your name.</p>
+          <h3>Earning points</h3>
+          <ul class="field">
+            <li><b>+10</b><span>for sharing a place</span></li>
+            <li><b>+15</b><span>the first time someone else saves or reviews it</span></li>
+            <li><b>+5</b><span>for each review</span></li>
+            <li><b>+3</b><span>more when the review has a photo</span></li>
+          </ul>
+          <p class="small">Up to 40 points a day.</p>
+          <h3>Titles</h3>
+          <ol class="ranks">
+            <li>Newcomer <span>0 points</span></li>
+            <li>Explorer <span>30</span></li>
+            <li>Regular <span>100</span></li>
+            <li>Makan Kaki <span>300</span></li>
+            <li>Food Legend <span>800</span></li>
+          </ol>
+        </div>
+        <div class="sheet">
+          <p class="stamp rect owner-stamp" aria-hidden="true">Owner</p>
+          <h2>Run the shop?</h2>
+          <p>Shop owners can claim their listing. Send a photo of a business document and a photo of the shopfront, taken in the app at the shop.</p>
+          <p>Once the claim is approved, you keep the opening hours, menu, photos and tags right, and reply to reviews as the owner.</p>
+          <p class="small">The proof photos are kept private and deleted as soon as the claim is approved or rejected.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tickets-sec" aria-labelledby="tickets-title">
+    <div class="wrap">
+      <h2 class="title" id="tickets-title">Your data and your account</h2>
+      <p>No ads and no tracking. Read what Toos keeps, or delete your account.</p>
+      <div class="tickets">
+        <a class="ticket" href="privacy.html"><span class="main"><b>Privacy policy</b><span class="desc">What Toos stores, why, who else handles it, how long it is kept, and your rights.</span></span><span class="stub" aria-hidden="true"><svg class="mark" viewBox="14 14 80 80" aria-hidden="true"><circle cx="54" cy="54" r="40" fill="#2e6b4f"/><g fill="#fff"><path fill-rule="evenodd" d="M54,34 a20,20 0 1,0 0.01,0 z M54,40 a14,14 0 1,1 -0.01,0 z"/><path d="M54,45 a9,9 0 1,0 0.01,0 z"/><path d="M30,36 l0,10 a4,4 0 0 0 8,0 l0,-10 l-2.5,0 l0,9 l-1.5,0 l0,-9 l-2.5,0 l0,9 l-1.5,0 l0,-9 z M33,50 l2,0 l0,20 l-2,0 z"/><path d="M74,36 c4,4 4,12 0,16 l0,18 l2.5,0 l0,-34 z"/></g></svg></span></a>
+        <a class="ticket" href="delete-account.html"><span class="main"><b>Delete your account</b><span class="desc">Three taps in the app, or by email if you no longer have it.</span></span><span class="stub" aria-hidden="true"><svg class="mark" viewBox="14 14 80 80" aria-hidden="true"><circle cx="54" cy="54" r="40" fill="#2e6b4f"/><g fill="#fff"><path fill-rule="evenodd" d="M54,34 a20,20 0 1,0 0.01,0 z M54,40 a14,14 0 1,1 -0.01,0 z"/><path d="M54,45 a9,9 0 1,0 0.01,0 z"/><path d="M30,36 l0,10 a4,4 0 0 0 8,0 l0,-10 l-2.5,0 l0,9 l-1.5,0 l0,-9 l-2.5,0 l0,9 l-1.5,0 l0,-9 z M33,50 l2,0 l0,20 l-2,0 z"/><path d="M74,36 c4,4 4,12 0,16 l0,18 l2.5,0 l0,-34 z"/></g></svg></span></a>
+      </div>
+    </div>
+  </section>
 </main>
 
-<footer>
+<footer class="foot cover-band">
   <div class="wrap">
-    <span>© 2026 Toos The Place Store · <a href="mailto:hitooscoffee@gmail.com">hitooscoffee@gmail.com</a></span>
-    <nav><a href="privacy.html">Privacy policy</a><a href="delete-account.html">Delete account</a></nav>
+    <p>© 2026 Toos The Place Store. Questions: <a href="mailto:hitooscoffee@gmail.com">hitooscoffee@gmail.com</a></p>
+    <nav aria-label="Footer"><a href="privacy.html">Privacy policy</a><a href="delete-account.html">Delete account</a></nav>
   </div>
 </footer>
-
 </body>
 </html>
