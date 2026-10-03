@@ -86,7 +86,7 @@ a:hover { text-decoration-thickness: 2px; }
 
 .topbar .wrap { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 16px; padding-top: 10px; padding-bottom: 10px; }
 .brand { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; text-decoration: none; font: 400 17px/1 var(--stamp); letter-spacing: 0.08em; color: var(--gold) !important; }
-.mark { width: 34px; height: 34px; flex: none; }
+.mark { width: 34px; height: 34px; flex: none; overflow: visible; }
 .mark circle { fill: none; stroke: var(--gold); stroke-width: 3; }
 .mark g { fill: var(--gold); }
 .topnav { display: flex; flex-wrap: wrap; gap: 0 20px; }
