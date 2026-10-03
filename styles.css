@@ -1,25 +1,28 @@
-/* Toos, concept 7: Makan passport.
-   A food-trip passport: a maroon cover with gold foil, security-paper pages,
+/* Toos, concept 7b: Makan passport in Toos green.
+   Concept 7 re-coloured: the cover is the brand green #2e6b4f with pale gold foil,
+   the security-paper pages are blush so they stay apart from the cover.
+   A food-trip passport: security-paper pages,
    a rubber stamp for every price band and tag, ticket stubs for the way out.
    Crimson Pro for reading, Rubik Mono One only inside the stamps. */
 
 :root {
-  --page: #edf2ea;
-  --guilloche: rgba(46, 125, 79, 0.1);
-  --sheet: #fcfdfb;
+  --page: #f6e9e4;
+  --guilloche: rgba(168, 98, 72, 0.1);
+  --sheet: #fdfcfa;
   --ink: #1f2430;
   --muted: #4b5462;
-  --line: #c8d2c6;
-  --cover: #6b1e2e;
-  --cover-2: #561627;
-  --cream: #f7ecd3;
-  --cream-muted: #e8d6c2;
-  --gold: #e0c06a;
+  --line: #e0d3cd;
+  --cover: #2e6b4f;
+  --cover-2: #245a41;
+  --cream: #f7f0dc;
+  --cream-muted: #e6eee2;
+  --gold: #f2dc8e;
   --violet: #5b3fa0;
-  --green: #2a7449;
+  --green: #2e6b4f;
+  --amber: #9a4f0e;
   --red: #b0302a;
   --blue: #2457a6;
-  --link: #2457a6;
+  --link: #2e6b4f;
   --focus: #2457a6;
   --spine: rgba(31, 36, 48, 0.12);
 
@@ -31,20 +34,24 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --page: #111517;
-    --guilloche: rgba(140, 200, 170, 0.06);
-    --sheet: #1a2024;
-    --ink: #e8ecef;
-    --muted: #aab3be;
-    --line: #2f3a40;
-    --cover: #4c1321;
-    --cover-2: #3c0e1a;
+    --page: #181516;
+    --guilloche: rgba(230, 170, 150, 0.05);
+    --sheet: #221d20;
+    --ink: #eeeae8;
+    --muted: #b8afad;
+    --line: #3a3335;
+    --cover: #1d4433;
+    --cover-2: #163728;
+    --gold: #e8cb78;
+    --cream: #f3ecd8;
+    --cream-muted: #cfdccb;
     --violet: #bba6f2;
-    --green: #82cfa0;
+    --green: #7cc49e;
+    --amber: #f0b26a;
     --red: #f39184;
     --blue: #93b9f6;
-    --link: #93b9f6;
-    --focus: #e0c06a;
+    --link: #7cc49e;
+    --focus: #e8cb78;
     --spine: rgba(0, 0, 0, 0.4);
   }
 }
@@ -71,7 +78,7 @@ a:hover { text-decoration-thickness: 2px; }
 .cover-band :focus-visible { outline-color: var(--gold); }
 
 .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding-left: var(--gutter); padding-right: var(--gutter); }
-.skip { position: absolute; left: -999px; top: 8px; background: var(--gold); color: #3c0e1a; padding: 10px 14px; z-index: 20; }
+.skip { position: absolute; left: -999px; top: 8px; background: var(--gold); color: #173826; padding: 10px 14px; z-index: 20; }
 .skip:focus { left: 12px; }
 .defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 
@@ -118,7 +125,7 @@ a:hover { text-decoration-thickness: 2px; }
   gap: 14px;
   color: var(--gold);
 }
-.booklet::before { content: ""; position: absolute; inset: 14px 14px 14px 26px; border: 1.5px solid rgba(224, 192, 106, 0.7); border-radius: 4px; }
+.booklet::before { content: ""; position: absolute; inset: 14px 14px 14px 26px; border: 1.5px solid color-mix(in srgb, var(--gold) 70%, transparent); border-radius: 4px; }
 .booklet .mark { width: 42%; height: auto; aspect-ratio: 1; }
 .booklet .mark circle { stroke-width: 2.4; }
 .booklet b { font: 400 clamp(18px, 4.6vw, 26px)/1 var(--stamp); letter-spacing: 0.18em; padding-left: 0.18em; }
@@ -156,7 +163,7 @@ h2.title { font: 600 clamp(29px, 4.2vw, 42px)/1.1 var(--serif); letter-spacing: 
 .stamp.round { width: 142px; height: 142px; border-radius: 50%; padding: 12px; box-shadow: inset 0 0 0 4px var(--sheet), inset 0 0 0 6px currentColor; }
 .stamp .big { font-size: 34px; line-height: 1.05; }
 .stamp small { font: 600 14px/1.2 var(--serif); margin-top: 2px; letter-spacing: 0; }
-.stamp.green { --c: var(--green); }
+.stamp.green { --c: var(--amber); }
 .stamp.red { --c: var(--red); }
 .stamp.blue { --c: var(--blue); }
 @media (prefers-reduced-motion: no-preference) {
