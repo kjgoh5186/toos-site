@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moderation · Toos</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#2e6b4f">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Rubik+Mono+One&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  /* Moderation page: the links in the claim and closure-report emails open here.
+     The decision itself is made by the notify-claim Edge Function; this page only
+     shows what it answers (as text, never HTML) and sends the moderator's choice. */
+  body { display: flex; flex-direction: column; min-height: 100vh; }
+  body > main { flex: 1 0 auto; }
+  .mod { max-width: 40rem; padding-top: 32px; padding-bottom: 80px; }
+  .mod .sheet { padding: 26px 24px 28px; }
+  .mod h2 { font: 700 clamp(28px, 5vw, 36px)/1.1 var(--serif); margin: 0 0 14px; text-wrap: balance; }
+  .mod p { margin: 0 0 12px; font-size: 18px; line-height: 1.55; }
+  .mod p.who { font-weight: 600; }
+  .mod .state { color: var(--muted); }
+  .mod fieldset { border: 0; padding: 0; margin: 18px 0 0; display: grid; gap: 8px; }
+  .mod legend { font-weight: 600; margin-bottom: 8px; }
+  .mod label.reason { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 6px; background: var(--sheet); cursor: pointer; }
+  .mod label.reason input { margin-top: 5px; }
+  .mod textarea { width: 100%; min-height: 96px; margin-top: 10px; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 6px; font: inherit; background: var(--sheet); color: var(--ink); }
+  .mod .act { margin-top: 20px; width: 100%; justify-content: center; font: inherit; font-weight: 600; cursor: pointer; }
+  .mod .act.danger { background: var(--red); border-color: var(--red); color: #fff; }
+  .mod .act[disabled] { opacity: 0.6; cursor: progress; }
+  .mod .error { color: var(--red); font-weight: 600; }
+  .mod .done { border-left: 4px solid var(--green); padding-left: 12px; }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<div class="cover-band">
+  <header class="topbar">
+    <div class="wrap">
+      <a class="brand" href="index.html"><svg class="mark" viewBox="14 14 80 80" aria-hidden="true"><circle cx="54" cy="54" r="40" fill="#2e6b4f"/><g fill="#fff"><path fill-rule="evenodd" d="M54,34 a20,20 0 1,0 0.01,0 z M54,40 a14,14 0 1,1 -0.01,0 z"/><path d="M54,45 a9,9 0 1,0 0.01,0 z"/><path d="M26.1,36 L26.1,46 A4,4 0 0 0 34.1,46 L34.1,36 L32.5,36 L32.5,44 L30.9,44 L30.9,36 L29.3,36 L29.3,44 L27.7,44 L27.7,36 Z M29.1,49 L31.1,49 L31.1,70 L29.1,70 Z"/><path d="M75.2,36 C79.7,38 80.2,47 79.2,54 L77.4,54 L77.4,70 L75.2,70 Z"/></g></svg>Toos</a>
+    </div>
+  </header>
+  <section class="page-head">
+    <div class="wrap">
+      <p class="eyebrow">Moderation</p>
+      <h1>Toos moderation</h1>
+    </div>
+  </section>
+</div>
+
+<main id="main" class="wrap mod">
+  <div class="sheet" id="panel" aria-live="polite">
+    <p class="state">Loading…</p>
+  </div>
+</main>
+
+<footer class="foot cover-band">
+  <div class="wrap">
+    <p>© 2026 Toos The Place Store.</p>
+    <nav aria-label="Footer"><a href="index.html">Home</a><a href="privacy.html">Privacy policy</a></nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var API = "https://mfzolfevciyqftbvwhot.supabase.co/functions/v1/notify-claim?api=moderate";
+  var panel = document.getElementById("panel");
+
+  // The link is .../moderate.html#a=<action>&t=<token>. The fragment never reaches
+  // a server, so the token is not in any log; it is cleared from the address bar
+  // once read so it does not linger in this tab's history entry either.
+  var params = new URLSearchParams(location.hash.replace(/^#/, ""));
+  var token = params.get("t") || "";
+  if (location.hash) history.replaceState(null, "", location.pathname);
+
+  function el(tag, props, children) {
+    var node = document.createElement(tag);
+    Object.keys(props || {}).forEach(function (k) {
+      if (k === "text") node.textContent = props[k];
+      else if (k === "className") node.className = props[k];
+      else node.setAttribute(k, props[k]);
+    });
+    (children || []).forEach(function (c) { node.appendChild(c); });
+    return node;
+  }
+
+  function show(res, extraError) {
+    panel.replaceChildren();
+    panel.appendChild(el("h2", { text: res.title || "Something went wrong" }));
+    (res.lines || []).forEach(function (line, i) {
+      panel.appendChild(el("p", { text: line, className: i === 0 && res.lines.length > 1 ? "who" : "" }));
+    });
+    panel.classList.toggle("done", !!res.done);
+    if (extraError) panel.appendChild(el("p", { text: extraError, className: "error" }));
+    if (res.offer) panel.appendChild(form(res.offer));
+    document.title = (res.title || "Moderation") + " · Toos";
+  }
+
+  function form(offer) {
+    var f = el("form");
+    if (offer.reasons) {
+      var set = el("fieldset", {}, [el("legend", { text: "Reason the claimant will read" })]);
+      offer.reasons.concat([offer.otherReason]).forEach(function (r, i) {
+        var input = el("input", { type: "radio", name: "reason", value: r });
+        if (i === 0) input.required = true;
+        var text = r === offer.otherReason ? r + " (write it below)" : r;
+        set.appendChild(el("label", { className: "reason" }, [input, el("span", { text: text })]));
+      });
+      var note = el("textarea", { name: "note", maxlength: String(offer.noteMax || 300), placeholder: offer.notePlaceholder || "" });
+      note.setAttribute("aria-label", "Note");
+      set.appendChild(note);
+      f.appendChild(set);
+    }
+    var button = el("button", { type: "submit", className: "button act" + (offer.danger ? " danger" : ""), text: offer.label });
+    f.appendChild(button);
+    f.addEventListener("submit", function (e) {
+      e.preventDefault();
+      button.disabled = true;
+      button.textContent = "Working…";
+      var data = new FormData(f);
+      call({ t: token, op: "perform", reason: data.get("reason") || "", note: data.get("note") || "" })
+        .then(function (res) { show(res); })
+        .catch(function () {
+          button.disabled = false;
+          button.textContent = offer.label;
+          showError("Could not reach Toos. Check the connection and try again.");
+        });
+    });
+    return f;
+  }
+
+  function showError(message) {
+    var old = panel.querySelector(".error");
+    if (old) old.remove();
+    panel.appendChild(el("p", { text: message, className: "error" }));
+  }
+
+  function call(body) {
+    return fetch(API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      cache: "no-store",
+    }).then(function (r) {
+      return r.json().catch(function () {
+        return { title: "Unexpected answer", lines: ["Toos answered with something this page cannot read (HTTP " + r.status + ")."] };
+      });
+    });
+  }
+
+  if (!token) {
+    show({ title: "Nothing to moderate", lines: ["This page is opened from the links in Toos moderation emails."] });
+    return;
+  }
+  call({ t: token, op: "preview" })
+    .then(function (res) { show(res); })
+    .catch(function () {
+      show({ title: "Could not reach Toos", lines: ["Check the connection, then open the link from the email again."] });
+    });
+})();
+</script>
+</body>
+</html>
