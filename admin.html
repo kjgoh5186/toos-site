@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin · Toos</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#2e6b4f">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Rubik+Mono+One&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  /* Admin page: badges and who holds them. The page itself can do nothing — every
+     action goes to the `admin` Edge Function, which checks the session and the
+     admin allow-list before touching anything. Text only, never HTML from data. */
+  body { display: flex; flex-direction: column; min-height: 100vh; }
+  body > main { flex: 1 0 auto; }
+  .adm { max-width: 56rem; padding-top: 32px; padding-bottom: 80px; display: grid; gap: 20px; }
+  .adm .sheet { padding: 24px 24px 26px; }
+  .adm h2 { font: 700 clamp(24px, 4vw, 30px)/1.15 var(--serif); margin: 0 0 12px; text-wrap: balance; }
+  .adm h3 { font: 600 20px/1.3 var(--serif); margin: 18px 0 8px; }
+  .adm p { margin: 0 0 10px; font-size: 17px; line-height: 1.5; }
+  .adm .state { color: var(--muted); }
+  .adm .error { color: var(--red); font-weight: 600; }
+  .adm .ok { color: var(--green); font-weight: 600; }
+  .adm .who { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .adm .who span { color: var(--muted); }
+  .adm form { display: grid; gap: 12px; }
+  .adm .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 12px 16px; }
+  .adm label { display: grid; gap: 4px; font-size: 15px; color: var(--muted); }
+  .adm label.row { grid-auto-flow: column; justify-content: start; align-items: center; gap: 10px; color: var(--ink); font-size: 16px; }
+  .adm input[type=text], .adm input[type=email], .adm input[type=password], .adm input[type=number],
+  .adm input[type=datetime-local], .adm select, .adm textarea {
+    width: 100%; padding: 9px 11px; border: 1.5px solid var(--line); border-radius: 6px; font: inherit; font-size: 16px;
+    background: var(--sheet); color: var(--ink); min-width: 0;
+  }
+  .adm textarea { min-height: 72px; }
+  .adm .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 4px; }
+  .adm .button { min-height: 42px; padding: 8px 18px; font: inherit; font-weight: 600; cursor: pointer; border: 1.5px solid var(--cover); }
+  .adm .button.quiet { background: transparent; color: var(--cover); }
+  .adm .button.danger { background: var(--red); border-color: var(--red); color: #fff; }
+  .adm .button.small { min-height: 32px; padding: 4px 12px; font-size: 14px; }
+  .adm .button[disabled] { opacity: 0.6; cursor: progress; }
+  .adm table.data { font-size: 15.5px; }
+  .adm table.data th, .adm table.data td { text-align: left; vertical-align: top; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--line); }
+  .adm table.data th { color: var(--muted); font-weight: 600; font-size: 13.5px; letter-spacing: 0.02em; text-transform: uppercase; }
+  .adm .scroll { overflow-x: auto; }
+  .adm .id { color: var(--muted); font-size: 13.5px; }
+  .adm code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14.5px; background: var(--cream-muted); color: var(--ink); padding: 2px 6px; border-radius: 4px; }
+  @media (prefers-color-scheme: dark) { .adm code { background: #2d3a2f; } }
+  .adm .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+  .adm .pill.on { background: var(--cream-muted); color: var(--green); }
+  .adm .pill.off { background: var(--line); color: var(--muted); }
+  .adm .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<div class="cover-band">
+  <header class="topbar">
+    <div class="wrap">
+      <a class="brand" href="index.html"><svg class="mark" viewBox="14 14 80 80" aria-hidden="true"><circle cx="54" cy="54" r="40" fill="#2e6b4f"/><g fill="#fff"><rect x="40" y="30" width="6" height="48" rx="3"/><rect x="50" y="30" width="6" height="48" rx="3"/><rect x="60" y="30" width="6" height="48" rx="3"/><rect x="34" y="30" width="38" height="8" rx="4"/></g></svg><span>Toos</span></a>
+    </div>
+  </header>
+  <section class="page-head">
+    <div class="wrap">
+      <p class="eyebrow">Admin</p>
+      <h1>Badges</h1>
+    </div>
+  </section>
+</div>
+
+<main id="main" class="wrap adm">
+  <div class="sheet" id="panel" aria-live="polite">
+    <p class="state">Loading…</p>
+  </div>
+</main>
+
+<footer class="foot cover-band">
+  <div class="wrap">
+    <p>© 2026 Toos The Place Store.</p>
+    <nav aria-label="Footer"><a href="index.html">Home</a><a href="privacy.html">Privacy policy</a></nav>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  var SUPABASE_URL = "https://mfzolfevciyqftbvwhot.supabase.co";
+  var PUBLISHABLE_KEY = "sb_publishable_VspZiBu84U3hVSCk2ORBaQ_XEz3Iv-b"; // the app's public key, same as the phone app carries
+  var API = SUPABASE_URL + "/functions/v1/admin";
+  var ICONS = ["trophy", "star", "flag", "heart", "sparkle"];
+  var panel = document.getElementById("panel");
+
+  if (!window.supabase) {
+    panel.replaceChildren(el("p", { className: "error", text: "Could not load the sign-in library. Check the connection and reload." }));
+    return;
+  }
+  var sb = window.supabase.createClient(SUPABASE_URL, PUBLISHABLE_KEY);
+
+  function el(tag, props, children) {
+    var node = document.createElement(tag);
+    Object.keys(props || {}).forEach(function (k) {
+      if (k === "text") node.textContent = props[k];
+      else if (k === "className") node.className = props[k];
+      else if (k === "onClick") node.addEventListener("click", props[k]);
+      else if (k === "checked" || k === "disabled" || k === "required" || k === "selected") node[k] = !!props[k];
+      else if (k === "value") node.value = props[k];
+      else node.setAttribute(k, props[k]);
+    });
+    (children || []).forEach(function (c) { if (c) node.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
+    return node;
+  }
+
+  // ── API ────────────────────────────────────────────────────────────────────
+  function call(body) {
+    return sb.auth.getSession().then(function (r) {
+      var token = r.data && r.data.session ? r.data.session.access_token : "";
+      return fetch(API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token, "apikey": PUBLISHABLE_KEY },
+        body: JSON.stringify(body),
+        cache: "no-store",
+      });
+    }).then(function (r) {
+      return r.json().catch(function () { return { ok: false, error: "Unexpected answer (HTTP " + r.status + ")" }; })
+        .then(function (res) { res.status = r.status; return res; });
+    }, function () {
+      return { ok: false, error: "Could not reach Toos. Check the connection and try again.", status: 0 };
+    });
+  }
+
+  // ── sign in ────────────────────────────────────────────────────────────────
+  function showLogin(message) {
+    document.title = "Admin · Toos";
+    var email = el("input", { type: "email", name: "email", autocomplete: "username", required: true });
+    var password = el("input", { type: "password", name: "password", autocomplete: "current-password", required: true });
+    var button = el("button", { type: "submit", className: "button", text: "Sign in" });
+    var note = el("p", { className: message ? "error" : "state", text: message || "Sign in with your Toos account. Only admin accounts get past this page." });
+    var form = el("form", {}, [
+      el("label", {}, ["Email", email]),
+      el("label", {}, ["Password", password]),
+      el("div", { className: "actions" }, [button]),
+    ]);
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      button.disabled = true;
+      button.textContent = "Signing in…";
+      sb.auth.signInWithPassword({ email: email.value.trim(), password: password.value }).then(function (r) {
+        if (r.error) {
+          button.disabled = false;
+          button.textContent = "Sign in";
+          note.className = "error";
+          note.textContent = r.error.message === "Invalid login credentials" ? "Wrong email or password." : r.error.message;
+          return;
+        }
+        start();
+      });
+    });
+    panel.replaceChildren(el("h2", { text: "Sign in" }), note, form);
+  }
+
+  function signOut() {
+    sb.auth.signOut().then(function () { showLogin(); });
+  }
+
+  // ── app ────────────────────────────────────────────────────────────────────
+  var state = { email: "", badges: [], holders: {}, editing: null, message: null };
+
+  function start() {
+    panel.replaceChildren(el("p", { className: "state", text: "Checking your account…" }));
+    call({ op: "me" }).then(function (res) {
+      if (!res.ok) {
+        if (res.status === 401) return showLogin();
+        return panel.replaceChildren(
+          el("h2", { text: "Not an admin" }),
+          el("p", { className: "error", text: res.error || "This account is not an admin." }),
+          el("div", { className: "actions" }, [el("button", { className: "button quiet", text: "Sign out", onClick: signOut })])
+        );
+      }
+      state.email = res.data.email;
+      return refresh();
+    });
+  }
+
+  function refresh() {
+    return call({ op: "badges.list" }).then(function (res) {
+      if (!res.ok) return flash(res.error, true);
+      state.badges = res.data;
+      render();
+    });
+  }
+
+  function flash(text, isError) {
+    state.message = { text: text, error: !!isError };
+    render();
+  }
+
+  function render() {
+    document.title = "Admin · Toos";
+    var header = el("div", { className: "who" }, [
+      el("span", { text: "Signed in as " + state.email }),
+      el("button", { className: "button quiet small", text: "Sign out", onClick: signOut }),
+    ]);
+    var parts = [header];
+    if (state.message) parts.push(el("p", { className: state.message.error ? "error" : "ok", text: state.message.text }));
+    parts.push(el("h2", { text: "Badges" }));
+    parts.push(badgesTable());
+    parts.push(el("div", { className: "actions" }, [
+      el("button", { className: "button", text: "New badge", onClick: function () { state.editing = {}; state.message = null; render(); } }),
+    ]));
+    if (state.editing) parts.push(badgeForm(state.editing));
+    parts.push(el("h2", { text: "Award a badge" }));
+    parts.push(awardForm());
+    panel.replaceChildren.apply(panel, parts);
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return "";
+    var d = new Date(iso);
+    return isNaN(d) ? iso : d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  }
+
+  function badgesTable() {
+    if (!state.badges.length) return el("p", { className: "state", text: "No badges yet." });
+    var rows = state.badges.map(function (b) {
+      var live = !!b.code && (!b.opens_at || new Date(b.opens_at) <= new Date()) && (!b.closes_at || new Date(b.closes_at) >= new Date());
+      var codeCell = el("div", { className: "chips" });
+      if (b.code) {
+        codeCell.appendChild(el("code", { text: b.code }));
+        codeCell.appendChild(el("button", { className: "button quiet small", text: "Copy", onClick: function () { copy(b.code, this); } }));
+        codeCell.appendChild(el("button", { className: "button quiet small", text: "Turn off", onClick: function () { setCode(b, null); } }));
+      } else {
+        codeCell.appendChild(el("button", { className: "button quiet small", text: "Generate code", onClick: function () { setCode(b, randomCode()); } }));
+      }
+      var window_ = [b.opens_at ? "from " + fmtDate(b.opens_at) : "", b.closes_at ? "until " + fmtDate(b.closes_at) : ""].filter(Boolean).join(" ") || "always";
+      var holders = state.holders[b.id];
+      var actions = el("div", { className: "chips" }, [
+        el("button", { className: "button quiet small", text: "Edit", onClick: function () { state.editing = b; state.message = null; render(); } }),
+        el("button", { className: "button quiet small", text: holders ? "Hide holders" : "Holders", onClick: function () { toggleHolders(b); } }),
+        b.awarded === 0 ? el("button", { className: "button quiet small", text: "Delete", onClick: function () { removeBadge(b, this); } }) : null,
+      ]);
+      var tr = el("tr", {}, [
+        el("td", {}, [el("div", { text: b.title }), el("div", { className: "id", text: b.id + " · " + b.icon + (b.numbered ? " · numbered" : "") })]),
+        el("td", { text: b.awarded + (b.max_awards ? " of " + b.max_awards : "") }),
+        el("td", {}, [el("span", { className: "pill " + (live ? "on" : "off"), text: live ? "Code live" : "Off" }), el("div", {}, [codeCell])]),
+        el("td", { text: window_ + (b.auto_award ? " · auto" : "") }),
+        el("td", {}, [actions]),
+      ]);
+      return holders ? [tr, holdersRow(b, holders)] : [tr];
+    });
+    var flat = [].concat.apply([], rows);
+    var table = el("table", { className: "data" }, [
+      el("thead", {}, [el("tr", {}, ["Badge", "Awarded", "Code", "Window", ""].map(function (h) { return el("th", { text: h }); }))]),
+      el("tbody", {}, flat),
+    ]);
+    return el("div", { className: "scroll" }, [table]);
+  }
+
+  function holdersRow(b, holders) {
+    var cell = el("td", { colspan: "5" });
+    if (holders === "loading") cell.appendChild(el("p", { className: "state", text: "Loading holders…" }));
+    else if (!holders.length) cell.appendChild(el("p", { className: "state", text: "Nobody holds " + b.title + " yet." }));
+    else {
+      var list = el("table", { className: "data" }, [
+        el("thead", {}, [el("tr", {}, ["#", "Member", "Email", "Awarded", "How", ""].map(function (h) { return el("th", { text: h }); }))]),
+        el("tbody", {}, holders.map(function (h) {
+          return el("tr", {}, [
+            el("td", { text: h.number == null ? "" : String(h.number) }),
+            el("td", { text: h.name }),
+            el("td", { text: h.email }),
+            el("td", { text: fmtDate(h.awarded_at) }),
+            el("td", { text: h.how }),
+            el("td", {}, [el("button", { className: "button quiet small", text: "Revoke", onClick: function () { revoke(b, h, this); } })]),
+          ]);
+        })),
+      ]);
+      cell.appendChild(el("div", { className: "scroll" }, [list]));
+    }
+    return el("tr", {}, [cell]);
+  }
+
+  function toggleHolders(b) {
+    if (state.holders[b.id]) { delete state.holders[b.id]; return render(); }
+    state.holders[b.id] = "loading";
+    render();
+    call({ op: "awards.list", badge_id: b.id }).then(function (res) {
+      if (!res.ok) { delete state.holders[b.id]; return flash(res.error, true); }
+      state.holders[b.id] = res.data;
+      render();
+    });
+  }
+
+  function badgeForm(b) {
+    var isNew = !b.id;
+    var f = {
+      id: el("input", { type: "text", name: "id", value: b.id || "", placeholder: "food-crawl-2026", pattern: "[a-z0-9][a-z0-9\-]{1,39}", required: true, disabled: !isNew }),
+      title: el("input", { type: "text", name: "title", value: b.title || "", placeholder: "Food Crawl 2026", maxlength: "60", required: true }),
+      description: el("textarea", { name: "description", maxlength: "300", placeholder: "One sentence the holder reads when they tap the badge." }),
+      icon: el("select", { name: "icon" }, ICONS.map(function (i) { return el("option", { value: i, text: i, selected: (b.icon || "trophy") === i }); })),
+      numbered: el("input", { type: "checkbox", name: "numbered", checked: !!b.numbered }),
+      max_awards: el("input", { type: "number", name: "max_awards", min: "1", step: "1", value: b.max_awards == null ? "" : String(b.max_awards), placeholder: "no cap" }),
+      opens_at: el("input", { type: "datetime-local", name: "opens_at", value: toLocalInput(b.opens_at) }),
+      closes_at: el("input", { type: "datetime-local", name: "closes_at", value: toLocalInput(b.closes_at) }),
+      auto_award: el("input", { type: "checkbox", name: "auto_award", checked: !!b.auto_award }),
+      sort_order: el("input", { type: "number", name: "sort_order", step: "1", value: b.sort_order == null ? "100" : String(b.sort_order) }),
+    };
+    f.description.value = b.description || "";
+    var save = el("button", { type: "submit", className: "button", text: isNew ? "Create badge" : "Save changes" });
+    var cancel = el("button", { type: "button", className: "button quiet", text: "Cancel", onClick: function () { state.editing = null; render(); } });
+    var form = el("form", {}, [
+      el("h3", { text: isNew ? "New badge" : "Edit " + b.title }),
+      el("div", { className: "grid2" }, [
+        el("label", {}, ["Id (never shown, cannot change later)", f.id]),
+        el("label", {}, ["Title", f.title]),
+      ]),
+      el("label", {}, ["Description", f.description]),
+      el("div", { className: "grid2" }, [
+        el("label", {}, ["Icon", f.icon]),
+        el("label", {}, ["Cap (empty = unlimited)", f.max_awards]),
+        el("label", {}, ["Opens", f.opens_at]),
+        el("label", {}, ["Closes", f.closes_at]),
+        el("label", {}, ["Sort order (lower shows first)", f.sort_order]),
+      ]),
+      el("label", { className: "row" }, [f.numbered, "Numbered — #001, #002… in award order"]),
+      el("label", { className: "row" }, [f.auto_award, "Auto-award to every new account while open and under the cap"]),
+      el("div", { className: "actions" }, [save, cancel]),
+    ]);
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      save.disabled = true;
+      call({
+        op: "badges.save",
+        id: isNew ? f.id.value.trim().toLowerCase() : b.id,
+        title: f.title.value,
+        description: f.description.value,
+        icon: f.icon.value,
+        numbered: f.numbered.checked,
+        max_awards: f.max_awards.value === "" ? null : Number(f.max_awards.value),
+        opens_at: fromLocalInput(f.opens_at.value),
+        closes_at: fromLocalInput(f.closes_at.value),
+        auto_award: f.auto_award.checked,
+        sort_order: Number(f.sort_order.value || 100),
+      }).then(function (res) {
+        save.disabled = false;
+        if (!res.ok) return flash(res.error, true);
+        state.editing = null;
+        state.message = { text: (isNew ? "Created " : "Saved ") + res.data.title + ".", error: false };
+        refresh();
+      });
+    });
+    return el("div", { className: "card" }, [form]);
+  }
+
+  function awardForm() {
+    var email = el("input", { type: "email", name: "email", placeholder: "member@example.com", required: true });
+    var badge = el("select", { name: "badge_id" }, state.badges.map(function (b) { return el("option", { value: b.id, text: b.title }); }));
+    var button = el("button", { type: "submit", className: "button", text: "Award", disabled: !state.badges.length });
+    var form = el("form", {}, [
+      el("p", { className: "state", text: "The member must already have a Toos account under this email." }),
+      el("div", { className: "grid2" }, [el("label", {}, ["Member's email", email]), el("label", {}, ["Badge", badge])]),
+      el("div", { className: "actions" }, [button]),
+    ]);
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      button.disabled = true;
+      var b = state.badges.filter(function (x) { return x.id === badge.value; })[0];
+      call({ op: "awards.grant", email: email.value, badge_id: badge.value }).then(function (res) {
+        button.disabled = false;
+        if (!res.ok) return flash(res.error, true);
+        var label = b ? b.title + (b.numbered && res.data.number != null ? " #" + pad(res.data.number, b.max_awards) : "") : badge.value;
+        state.message = { text: (res.data.already ? res.data.name + " already held " : "Awarded ") + label + (res.data.already ? "." : " to " + res.data.name + " (" + email.value.trim() + ")."), error: false };
+        if (state.holders[badge.value]) delete state.holders[badge.value];
+        refresh();
+      });
+    });
+    return el("div", { className: "card" }, [form]);
+  }
+
+  function setCode(b, code) {
+    call({ op: "badges.code", id: b.id, code: code }).then(function (res) {
+      if (!res.ok) return flash(res.error, true);
+      state.message = { text: code ? "Code for " + b.title + " is " + res.data.code + ". Share it with the people who should have the badge." : "Code for " + b.title + " turned off.", error: false };
+      refresh();
+    });
+  }
+
+  function removeBadge(b, button) {
+    if (button.textContent !== "Really delete?") { button.textContent = "Really delete?"; button.className = "button danger small"; return; }
+    call({ op: "badges.delete", id: b.id }).then(function (res) {
+      if (!res.ok) return flash(res.error, true);
+      state.message = { text: "Deleted " + b.title + ".", error: false };
+      refresh();
+    });
+  }
+
+  function revoke(b, h, button) {
+    if (button.textContent !== "Really revoke?") { button.textContent = "Really revoke?"; button.className = "button danger small"; return; }
+    call({ op: "awards.revoke", user_id: h.user_id, badge_id: b.id }).then(function (res) {
+      if (!res.ok) return flash(res.error, true);
+      state.message = { text: "Revoked " + b.title + " from " + h.name + ".", error: false };
+      delete state.holders[b.id];
+      refresh();
+    });
+  }
+
+  function copy(text, button) {
+    var done = function () { button.textContent = "Copied"; setTimeout(function () { button.textContent = "Copy"; }, 1500); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, function () { window.prompt("Copy the code", text); });
+    else window.prompt("Copy the code", text);
+  }
+
+  // TOOS-XXXX-XXXX from an alphabet without look-alikes (no 0/O, 1/I).
+  function randomCode() {
+    var alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    var bytes = new Uint8Array(8);
+    crypto.getRandomValues(bytes);
+    var s = "";
+    for (var i = 0; i < 8; i++) s += alphabet[bytes[i] % alphabet.length];
+    return "TOOS-" + s.slice(0, 4) + "-" + s.slice(4);
+  }
+
+  function pad(n, cap) {
+    var width = cap ? String(cap).length : 1;
+    var s = String(n);
+    while (s.length < width) s = "0" + s;
+    return s;
+  }
+
+  function toLocalInput(iso) {
+    if (!iso) return "";
+    var d = new Date(iso);
+    if (isNaN(d)) return "";
+    var p = function (x) { return (x < 10 ? "0" : "") + x; };
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + "T" + p(d.getHours()) + ":" + p(d.getMinutes());
+  }
+
+  function fromLocalInput(v) {
+    if (!v) return null;
+    var d = new Date(v);
+    return isNaN(d) ? null : d.toISOString();
+  }
+
+  sb.auth.getSession().then(function (r) {
+    if (r.data && r.data.session) start(); else showLogin();
+  });
+})();
+</script>
+</body>
+</html>
