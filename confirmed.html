@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Email confirmed · Toos</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#2e6b4f">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Rubik+Mono+One&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  /* Where Supabase sends people after they tap the link in a Toos email (the
+     project's Site URL). The confirmation has already happened by the time this
+     page loads; it only has to say so and send them back to the app. The link
+     may also carry an error in the fragment (expired, already used) — shown as
+     text, never as HTML. */
+  body { display: flex; flex-direction: column; min-height: 100vh; }
+  body > main { flex: 1 0 auto; }
+  .ok { max-width: 36rem; padding-top: 32px; padding-bottom: 80px; }
+  .ok .sheet { padding: 26px 24px 28px; }
+  .ok h2 { font: 700 clamp(28px, 5vw, 36px)/1.1 var(--serif); margin: 0 0 14px; text-wrap: balance; }
+  .ok p { margin: 0 0 12px; font-size: 18px; line-height: 1.55; }
+  .ok .state { color: var(--muted); }
+  .ok .error { color: var(--red); font-weight: 600; }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<div class="cover-band">
+  <header class="topbar">
+    <div class="wrap">
+      <a class="brand" href="index.html"><svg class="mark" viewBox="14 14 80 80" aria-hidden="true"><circle cx="54" cy="54" r="40" fill="#2e6b4f"/><g fill="#fff"><rect x="40" y="30" width="6" height="48" rx="3"/><rect x="50" y="30" width="6" height="48" rx="3"/><rect x="60" y="30" width="6" height="48" rx="3"/><rect x="34" y="30" width="38" height="8" rx="4"/></g></svg><span>Toos</span></a>
+    </div>
+  </header>
+  <section class="page-head">
+    <div class="wrap">
+      <p class="eyebrow">Your account</p>
+      <h1>Toos</h1>
+    </div>
+  </section>
+</div>
+
+<main id="main" class="wrap ok">
+  <div class="sheet" id="panel" aria-live="polite">
+    <h2 id="title">Email confirmed</h2>
+    <p id="line1">Your Toos account is ready.</p>
+    <p id="line2" class="state">Go back to the Toos app on your phone and sign in with the email and password you chose. You can close this page.</p>
+  </div>
+</main>
+
+<footer class="foot cover-band">
+  <div class="wrap">
+    <p>© 2026 Toos The Place Store.</p>
+    <nav aria-label="Footer"><a href="index.html">Home</a><a href="privacy.html">Privacy policy</a></nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  // Supabase reports a failed link in the fragment: #error=access_denied&error_code=otp_expired&error_description=...
+  var params = new URLSearchParams(location.hash.replace(/^#/, ""));
+  var code = params.get("error_code") || "";
+  var description = params.get("error_description") || "";
+  if (location.hash) history.replaceState(null, "", location.pathname);
+  if (!code && !params.get("error")) return;
+  var title = document.getElementById("title");
+  var line1 = document.getElementById("line1");
+  var line2 = document.getElementById("line2");
+  title.textContent = "This link didn't work";
+  line1.className = "error";
+  if (code === "otp_expired") {
+    line1.textContent = "The link has expired. Links work for an hour.";
+    line2.textContent = "In the Toos app, try signing in: it will offer to send you a fresh email.";
+  } else {
+    line1.textContent = description ? description.replace(/\+/g, " ") : "The link is not valid any more. It may already have been used.";
+    line2.textContent = "Try signing in to the Toos app. If your account is already confirmed, it will just work.";
+  }
+  document.title = "Link didn't work · Toos";
+})();
+</script>
+</body>
+</html>
