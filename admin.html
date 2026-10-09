@@ -13,26 +13,34 @@
 <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Rubik+Mono+One&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <style>
-  /* Admin page: badges and who holds them. The page itself can do nothing — every
-     action goes to the `admin` Edge Function, which checks the session and the
-     admin allow-list before touching anything. Text only, never HTML from data. */
+  /* Admin page. The page itself can do nothing — every action goes to the `admin`
+     Edge Function, which checks the session and the admin list before touching
+     anything. Text only, never HTML from data. */
   body { display: flex; flex-direction: column; min-height: 100vh; }
   body > main { flex: 1 0 auto; }
-  .adm { max-width: 56rem; padding-top: 32px; padding-bottom: 80px; display: grid; gap: 20px; }
-  .adm .sheet { padding: 24px 24px 26px; }
+  .adm { max-width: 60rem; padding-top: 24px; padding-bottom: 80px; display: grid; gap: 18px; }
+  .adm .sheet { padding: 22px 24px 26px; }
   .adm h2 { font: 700 clamp(24px, 4vw, 30px)/1.15 var(--serif); margin: 0 0 12px; text-wrap: balance; }
   .adm h3 { font: 600 20px/1.3 var(--serif); margin: 18px 0 8px; }
   .adm p { margin: 0 0 10px; font-size: 17px; line-height: 1.5; }
   .adm .state { color: var(--muted); }
   .adm .error { color: var(--red); font-weight: 600; }
   .adm .ok { color: var(--green); font-weight: 600; }
-  .adm .who { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .adm .who { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
   .adm .who span { color: var(--muted); }
+  .adm nav.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 16px; }
+  .adm nav.tabs a { text-decoration: none; padding: 7px 13px; border-radius: 999px; border: 1.5px solid var(--line); color: var(--ink); font-size: 15px; font-weight: 600; }
+  .adm nav.tabs a.on { background: var(--cover); border-color: var(--cover); color: var(--cream); }
+  .adm nav.tabs a .n { display: inline-block; min-width: 1.4em; padding: 0 5px; margin-left: 6px; border-radius: 999px; background: var(--red); color: #fff; font-size: 12px; text-align: center; }
   .adm form { display: grid; gap: 12px; }
   .adm .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 12px 16px; }
+  .adm .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 10px; margin-bottom: 8px; }
+  .adm .tile { border: 1.5px solid var(--line); border-radius: 6px; padding: 12px 14px; }
+  .adm .tile b { display: block; font: 700 26px/1.1 var(--serif); }
+  .adm .tile span { color: var(--muted); font-size: 14px; }
   .adm label { display: grid; gap: 4px; font-size: 15px; color: var(--muted); }
   .adm label.row { grid-auto-flow: column; justify-content: start; align-items: center; gap: 10px; color: var(--ink); font-size: 16px; }
-  .adm input[type=text], .adm input[type=email], .adm input[type=password], .adm input[type=number],
+  .adm input[type=text], .adm input[type=email], .adm input[type=password], .adm input[type=number], .adm input[type=search],
   .adm input[type=datetime-local], .adm select, .adm textarea {
     width: 100%; padding: 9px 11px; border: 1.5px solid var(--line); border-radius: 6px; font: inherit; font-size: 16px;
     background: var(--sheet); color: var(--ink); min-width: 0;
@@ -44,17 +52,28 @@
   .adm .button.danger { background: var(--red); border-color: var(--red); color: #fff; }
   .adm .button.small { min-height: 32px; padding: 4px 12px; font-size: 14px; }
   .adm .button[disabled] { opacity: 0.6; cursor: progress; }
-  .adm table.data { font-size: 15.5px; }
+  .adm table.data { font-size: 15px; }
   .adm table.data th, .adm table.data td { text-align: left; vertical-align: top; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--line); }
-  .adm table.data th { color: var(--muted); font-weight: 600; font-size: 13.5px; letter-spacing: 0.02em; text-transform: uppercase; }
+  .adm table.data th { color: var(--muted); font-weight: 600; font-size: 13px; letter-spacing: 0.02em; text-transform: uppercase; }
+  .adm table.data tr.sel td { background: var(--cream-muted); }
+  .adm table.data tr.click { cursor: pointer; }
   .adm .scroll { overflow-x: auto; }
-  .adm .id { color: var(--muted); font-size: 13.5px; }
-  .adm code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14.5px; background: var(--cream-muted); color: var(--ink); padding: 2px 6px; border-radius: 4px; }
+  .adm .id, .adm .small-muted { color: var(--muted); font-size: 13.5px; }
+  .adm code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14px; background: var(--cream-muted); color: var(--ink); padding: 2px 6px; border-radius: 4px; }
   @media (prefers-color-scheme: dark) { .adm code { background: #2d3a2f; } }
   .adm .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 13px; font-weight: 600; }
   .adm .pill.on { background: var(--cream-muted); color: var(--green); }
   .adm .pill.off { background: var(--line); color: var(--muted); }
-  .adm .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .adm .pill.warn { background: #f6e0d6; color: var(--red); }
+  .adm .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .adm .card { padding: 16px 18px 14px; margin-bottom: 12px; }
+  .adm .card h4 { margin: 0 0 6px; font: 600 18px/1.3 var(--serif); }
+  .adm .card ul { margin: 6px 0 10px; padding-left: 20px; font-size: 15.5px; }
+  .adm .panel { border-left: 3px solid var(--cover); padding: 8px 0 4px 14px; margin: 10px 0 6px; }
+  .adm .panel.done { border-color: var(--green); }
+  .adm label.reason { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 6px; color: var(--ink); font-size: 15.5px; }
+  .adm fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; }
+  .adm .excerpt { max-width: 28rem; }
 </style>
 </head>
 <body>
@@ -69,7 +88,7 @@
   <section class="page-head">
     <div class="wrap">
       <p class="eyebrow">Admin</p>
-      <h1>Badges</h1>
+      <h1>Toos admin</h1>
     </div>
   </section>
 </div>
@@ -95,6 +114,10 @@
   var PUBLISHABLE_KEY = "sb_publishable_VspZiBu84U3hVSCk2ORBaQ_XEz3Iv-b"; // the app's public key, same as the phone app carries
   var API = SUPABASE_URL + "/functions/v1/admin";
   var ICONS = ["trophy", "star", "flag", "heart", "sparkle"];
+  var TABS = [
+    ["dashboard", "Dashboard"], ["moderation", "Moderation"], ["members", "Members"], ["listings", "Listings"],
+    ["reviews", "Reviews"], ["badges", "Badges"], ["audit", "Audit"], ["admins", "Admins"],
+  ];
   var panel = document.getElementById("panel");
 
   if (!window.supabase) {
@@ -103,6 +126,7 @@
   }
   var sb = window.supabase.createClient(SUPABASE_URL, PUBLISHABLE_KEY);
 
+  // ── tiny DOM helpers ───────────────────────────────────────────────────────
   function el(tag, props, children) {
     var node = document.createElement(tag);
     Object.keys(props || {}).forEach(function (k) {
@@ -115,6 +139,41 @@
     });
     (children || []).forEach(function (c) { if (c) node.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
     return node;
+  }
+  function table(headers, rows) {
+    return el("div", { className: "scroll" }, [el("table", { className: "data" }, [
+      el("thead", {}, [el("tr", {}, headers.map(function (h) { return el("th", { text: h }); }))]),
+      el("tbody", {}, rows),
+    ])]);
+  }
+  function fmtDate(iso) {
+    if (!iso) return "";
+    var d = new Date(iso);
+    return isNaN(d) ? iso : d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  }
+  function fmtTime(iso) {
+    if (!iso) return "";
+    var d = new Date(iso);
+    return isNaN(d) ? iso : d.toLocaleString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  }
+  function pad(n, cap) {
+    var width = cap ? String(cap).length : 1;
+    var s = String(n);
+    while (s.length < width) s = "0" + s;
+    return s;
+  }
+  function badgeLabel(b, number) {
+    return b.numbered && number != null ? b.title + " #" + pad(number, b.max_awards) : b.title;
+  }
+  // Two clicks for anything destructive: the first arms the button, the second acts.
+  function armed(label, confirmLabel, onConfirm, danger) {
+    var b = el("button", { className: "button quiet small", text: label });
+    b.addEventListener("click", function () {
+      if (b.textContent !== confirmLabel) { b.textContent = confirmLabel; b.className = "button " + (danger === false ? "" : "danger ") + "small"; return; }
+      b.disabled = true;
+      onConfirm(b);
+    });
+    return b;
   }
 
   // ── API ────────────────────────────────────────────────────────────────────
@@ -156,7 +215,8 @@
           button.disabled = false;
           button.textContent = "Sign in";
           note.className = "error";
-          note.textContent = r.error.message === "Invalid login credentials" ? "Wrong email or password." : r.error.message;
+          var m = r.error.message || "";
+          note.textContent = /invalid login/i.test(m) ? "Wrong email or password." : /not confirmed/i.test(m) ? "Confirm your email first: open the link Toos sent you, then sign in." : m;
           return;
         }
         start();
@@ -165,12 +225,13 @@
     panel.replaceChildren(el("h2", { text: "Sign in" }), note, form);
   }
 
-  function signOut() {
-    sb.auth.signOut().then(function () { showLogin(); });
-  }
+  function signOut() { sb.auth.signOut().then(function () { showLogin(); }); }
 
-  // ── app ────────────────────────────────────────────────────────────────────
-  var state = { email: "", badges: [], holders: {}, editing: null, message: null };
+  // ── app state ──────────────────────────────────────────────────────────────
+  var state = { email: "", fixed: false, tab: "dashboard", message: null, open: 0,
+    stats: null, moderation: null, members: { q: "", rows: null, selected: null, detail: null },
+    listings: { q: "", rows: null }, reviews: { q: "", rows: null },
+    badges: null, holders: {}, editing: null, audit: null, admins: null };
 
   function start() {
     panel.replaceChildren(el("p", { className: "state", text: "Checking your account…" }));
@@ -184,48 +245,340 @@
         );
       }
       state.email = res.data.email;
-      return refresh();
+      state.fixed = !!res.data.fixed;
+      var hash = location.hash.replace(/^#/, "");
+      state.tab = TABS.some(function (t) { return t[0] === hash; }) ? hash : "dashboard";
+      window.addEventListener("hashchange", function () {
+        var h = location.hash.replace(/^#/, "");
+        if (TABS.some(function (t) { return t[0] === h; }) && h !== state.tab) { state.tab = h; state.message = null; render(); loadTab(); }
+      });
+      render();
+      loadTab();
+      refreshOpenCount();
     });
   }
 
-  function refresh() {
-    return call({ op: "badges.list" }).then(function (res) {
-      if (!res.ok) return flash(res.error, true);
-      state.badges = res.data;
+  function refreshOpenCount() {
+    return call({ op: "stats" }).then(function (res) {
+      if (!res.ok) return;
+      state.stats = res.data;
+      state.open = (res.data.claims_pending || 0) + (res.data.reports_open || 0) + (res.data.edits_open || 0);
       render();
     });
   }
 
-  function flash(text, isError) {
-    state.message = { text: text, error: !!isError };
+  function flash(text, isError) { state.message = { text: text, error: !!isError }; render(); }
+
+  function loadTab() {
+    var t = state.tab;
+    if (t === "dashboard") return refreshOpenCount();
+    if (t === "moderation") return call({ op: "moderation.list" }).then(function (res) { if (!res.ok) return flash(res.error, true); state.moderation = res.data; render(); });
+    if (t === "badges") return call({ op: "badges.list" }).then(function (res) { if (!res.ok) return flash(res.error, true); state.badges = res.data; render(); });
+    if (t === "listings") return searchListings();
+    if (t === "reviews") return searchReviews();
+    if (t === "audit") return call({ op: "audit.list", limit: 100 }).then(function (res) { if (!res.ok) return flash(res.error, true); state.audit = res.data; render(); });
+    if (t === "admins") return call({ op: "admins.list" }).then(function (res) { if (!res.ok) return flash(res.error, true); state.admins = res.data; render(); });
     render();
   }
 
+  // ── render ─────────────────────────────────────────────────────────────────
   function render() {
-    document.title = "Admin · Toos";
+    var label = TABS.filter(function (t) { return t[0] === state.tab; })[0][1];
+    document.title = label + " · Toos admin";
     var header = el("div", { className: "who" }, [
       el("span", { text: "Signed in as " + state.email }),
       el("button", { className: "button quiet small", text: "Sign out", onClick: signOut }),
     ]);
-    var parts = [header];
+    var nav = el("nav", { className: "tabs" }, TABS.map(function (t) {
+      var a = el("a", { href: "#" + t[0], className: t[0] === state.tab ? "on" : "", text: t[1] });
+      if (t[0] === "moderation" && state.open) a.appendChild(el("span", { className: "n", text: String(state.open) }));
+      return a;
+    }));
+    var parts = [header, nav];
     if (state.message) parts.push(el("p", { className: state.message.error ? "error" : "ok", text: state.message.text }));
-    parts.push(el("h2", { text: "Badges" }));
-    parts.push(badgesTable());
-    parts.push(el("div", { className: "actions" }, [
-      el("button", { className: "button", text: "New badge", onClick: function () { state.editing = {}; state.message = null; render(); } }),
-    ]));
-    if (state.editing) parts.push(badgeForm(state.editing));
-    parts.push(el("h2", { text: "Award a badge" }));
-    parts.push(awardForm());
+    var views = { dashboard: dashboardView, moderation: moderationView, members: membersView, listings: listingsView,
+      reviews: reviewsView, badges: badgesView, audit: auditView, admins: adminsView };
+    parts = parts.concat(views[state.tab]());
     panel.replaceChildren.apply(panel, parts);
   }
 
-  function fmtDate(iso) {
-    if (!iso) return "";
-    var d = new Date(iso);
-    return isNaN(d) ? iso : d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  // ── dashboard ──────────────────────────────────────────────────────────────
+  function dashboardView() {
+    var s = state.stats;
+    if (!s) return [el("p", { className: "state", text: "Loading…" })];
+    var tile = function (n, label) { return el("div", { className: "tile" }, [el("b", { text: String(n) }), el("span", { text: label })]); };
+    var tiles = el("div", { className: "tiles" }, [
+      tile(s.members, "members (" + s.members_confirmed + " confirmed)"), tile(s.places, "listings shared"), tile(s.reviews, "reviews"),
+      tile(s.votes, "helpful votes"), tile(s.saves, "saves"), tile(s.badges_awarded, "badges awarded"),
+      tile(state.open, "waiting for a decision"), tile(s.claims_verified, "verified owners"), tile(s.places_closed, "places closed"),
+    ]);
+    var rows = (s.daily || []).map(function (d) {
+      return el("tr", {}, [el("td", { text: fmtDate(d.day) }), el("td", { text: String(d.members) }), el("td", { text: String(d.places) }),
+        el("td", { text: String(d.reviews) }), el("td", { text: String(d.votes) }), el("td", { text: String(d.saves) })]);
+    });
+    return [el("h2", { text: "Dashboard" }), tiles, el("h3", { text: "Last 7 days" }), table(["Day", "New members", "Listings", "Reviews", "Votes", "Saves"], rows)];
   }
 
+  // ── moderation ─────────────────────────────────────────────────────────────
+  function moderationView() {
+    var m = state.moderation;
+    if (!m) return [el("h2", { text: "Moderation" }), el("p", { className: "state", text: "Loading…" })];
+    var out = [el("h2", { text: "Moderation" })];
+    var total = m.claims.length + m.closures.length + m.edits.length;
+    if (!total) out.push(el("p", { className: "ok", text: "Nothing waiting. Everything has been decided." }));
+    if (m.claims.length) {
+      out.push(el("h3", { text: "Ownership claims (" + m.claims.length + ")" }));
+      m.claims.forEach(function (c) { out.push(claimCard(c)); });
+    }
+    if (m.closures.length) {
+      out.push(el("h3", { text: "Reported closed (" + m.closures.length + ")" }));
+      m.closures.forEach(function (c) { out.push(closureCard(c)); });
+    }
+    if (m.edits.length) {
+      out.push(el("h3", { text: "Suggested edits (" + m.edits.length + ")" }));
+      m.edits.forEach(function (c) { out.push(editCard(c)); });
+    }
+    return out;
+  }
+  function placeLine(p, id) { return p.name + (p.address ? ", " + p.address : "") + (p.name === id ? "" : " · " + id); }
+  function claimCard(c) {
+    var proofs = el("ul", {}, [
+      c.document_url ? el("li", {}, [el("a", { href: c.document_url, target: "_blank", rel: "noopener", text: "Business document" })]) : el("li", { text: "No document attached" + (c.note ? " — claimant says: “" + c.note + "”" : "") }),
+      c.shopfront_url
+        ? el("li", {}, [el("a", { href: c.shopfront_url, target: "_blank", rel: "noopener", text: "Photo at the shop" }), " — " + (c.shopfront_from_gallery ? "chosen from the gallery, so it may be old and its location is unknown" : c.shopfront_distance_m == null ? "taken in-app, no location fix" : "taken in-app, " + c.shopfront_distance_m + " m from the listing's pin")])
+        : el("li", { text: "No shop photo attached" }),
+    ]);
+    var card = el("div", { className: "card" }, [
+      el("h4", { text: c.claimant.name + (c.claimant.area ? " (" + c.claimant.area + ")" : "") + " claims " + c.place.name }),
+      el("p", { className: "small-muted", text: placeLine(c.place, c.place_id) + " · filed " + fmtDate(c.created_at) + (c.previously_rejected ? " · second attempt" : "") }),
+      proofs,
+    ]);
+    var acts = el("div", { className: "actions" }, [
+      el("button", { className: "button small", text: "Approve", onClick: function () { decide(card, c.tokens.approve, "Approve"); } }),
+      el("button", { className: "button quiet small", text: "Reject…", onClick: function () { decide(card, c.tokens.reject, "Reject"); } }),
+    ]);
+    card.appendChild(acts);
+    return card;
+  }
+  function closureCard(c) {
+    var card = el("div", { className: "card" }, [
+      el("h4", { text: c.reporter.name + " says " + c.place.name + " has closed" }),
+      el("p", { className: "small-muted", text: placeLine(c.place, c.place_id) + " · reported " + fmtDate(c.created_at) + (c.other_reports ? " · " + c.other_reports + " other open report" + (c.other_reports === 1 ? "" : "s") : "") }),
+      c.note ? el("p", { text: "“" + c.note + "”" }) : null,
+    ]);
+    card.appendChild(el("div", { className: "actions" }, [
+      el("button", { className: "button danger small", text: "Close place", onClick: function () { decide(card, c.tokens.close, "Close place"); } }),
+      el("button", { className: "button quiet small", text: "Dismiss", onClick: function () { decide(card, c.tokens.dismiss, "Dismiss"); } }),
+    ]));
+    return card;
+  }
+  function editCard(c) {
+    var card = el("div", { className: "card" }, [
+      el("h4", { text: c.suggester.name + " suggests an edit to " + c.place.name }),
+      el("p", { className: "small-muted", text: placeLine(c.place, c.place_id) + " · suggested " + fmtDate(c.created_at) }),
+      c.changes.length ? el("ul", {}, c.changes.map(function (ch) { return el("li", { text: ch.label + " → " + ch.value }); })) : null,
+      c.note ? el("p", { text: "“" + c.note + "”" }) : null,
+    ]);
+    card.appendChild(el("div", { className: "actions" }, [
+      el("button", { className: "button small", text: "Done", onClick: function () { decide(card, c.tokens.done, "Mark done"); } }),
+      el("button", { className: "button quiet small", text: "Dismiss", onClick: function () { decide(card, c.tokens.dismiss, "Dismiss"); } }),
+    ]));
+    return card;
+  }
+  // Preview from the server (what will happen, and any reasons to pick from), then act.
+  function decide(card, token, label) {
+    var old = card.querySelector(".panel");
+    if (old) old.remove();
+    var p = el("div", { className: "panel" }, [el("p", { className: "state", text: "Checking…" })]);
+    card.appendChild(p);
+    call({ op: "moderation.preview", t: token }).then(function (res) {
+      p.replaceChildren();
+      if (!res.ok) { p.appendChild(el("p", { className: "error", text: res.error })); return; }
+      var r = res.data;
+      p.appendChild(el("p", { text: r.title, className: "who" }));
+      (r.lines || []).forEach(function (line) { p.appendChild(el("p", { text: line })); });
+      if (!r.offer) return;
+      var form = el("form");
+      if (r.offer.reasons) {
+        var set = el("fieldset", {}, [el("legend", { text: "Reason the claimant will read" })]);
+        r.offer.reasons.concat([r.offer.otherReason]).forEach(function (reason, i) {
+          var input = el("input", { type: "radio", name: "reason", value: reason });
+          if (i === 0) input.required = true;
+          set.appendChild(el("label", { className: "reason" }, [input, el("span", { text: reason === r.offer.otherReason ? reason + " (write it below)" : reason })]));
+        });
+        var note = el("textarea", { name: "note", maxlength: String(r.offer.noteMax || 300), placeholder: r.offer.notePlaceholder || "" });
+        set.appendChild(note);
+        form.appendChild(set);
+      }
+      var button = el("button", { type: "submit", className: "button small" + (r.offer.danger ? " danger" : ""), text: r.offer.label || label });
+      form.appendChild(el("div", { className: "actions" }, [button, el("button", { type: "button", className: "button quiet small", text: "Cancel", onClick: function () { p.remove(); } })]));
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        button.disabled = true;
+        var data = new FormData(form);
+        call({ op: "moderation.act", t: token, reason: data.get("reason") || "", note: data.get("note") || "" }).then(function (res2) {
+          if (!res2.ok) { button.disabled = false; p.appendChild(el("p", { className: "error", text: res2.error })); return; }
+          var d = res2.data;
+          p.replaceChildren(el("p", { className: d.done ? "ok" : "error", text: d.title }));
+          (d.lines || []).forEach(function (line) { p.appendChild(el("p", { text: line })); });
+          p.classList.add("done");
+          card.querySelectorAll(".actions .button").forEach(function (b) { if (b.form !== form) b.disabled = true; });
+          setTimeout(function () { loadTab(); refreshOpenCount(); }, 1500);
+        });
+      });
+      p.appendChild(form);
+    });
+  }
+
+  // ── members ────────────────────────────────────────────────────────────────
+  function membersView() {
+    var m = state.members;
+    var q = el("input", { type: "search", name: "q", value: m.q, placeholder: "name or email" });
+    var form = el("form", { className: "grid2" }, [el("label", {}, ["Find a member", q]), el("div", { className: "actions" }, [el("button", { type: "submit", className: "button", text: "Search" })])]);
+    form.addEventListener("submit", function (e) { e.preventDefault(); m.q = q.value; m.selected = null; m.detail = null; searchMembers(); });
+    var out = [el("h2", { text: "Members" }), form];
+    if (m.rows) {
+      if (!m.rows.length) out.push(el("p", { className: "state", text: "No member matches “" + m.q + "”." }));
+      else out.push(table(["Name", "Email", "Area", "Joined", "Last sign-in", ""], m.rows.map(function (u) {
+        var tr = el("tr", { className: "click" + (u.id === m.selected ? " sel" : "") }, [
+          el("td", { text: u.name }), el("td", { text: u.email || "—" }), el("td", { text: u.area || "" }), el("td", { text: fmtDate(u.created_at) }),
+          el("td", { text: u.last_sign_in_at ? fmtDate(u.last_sign_in_at) : "never" }),
+          el("td", {}, [u.confirmed === false ? el("span", { className: "pill warn", text: "unconfirmed" }) : null]),
+        ]);
+        tr.addEventListener("click", function () { openMember(u.id); });
+        return tr;
+      })));
+    }
+    if (m.detail) out.push(memberCard(m.detail));
+    return out;
+  }
+  function searchMembers() {
+    call({ op: "members.search", q: state.members.q }).then(function (res) {
+      if (!res.ok) return flash(res.error, true);
+      state.members.rows = res.data; render();
+    });
+  }
+  function openMember(id) {
+    state.members.selected = id; state.members.detail = null; render();
+    call({ op: "members.get", user_id: id }).then(function (res) {
+      if (!res.ok) return flash(res.error, true);
+      state.members.detail = res.data; render();
+      if (!state.badges) call({ op: "badges.list" }).then(function (r2) { if (r2.ok) { state.badges = r2.data; render(); } });
+    });
+  }
+  function memberCard(d) {
+    var facts = [
+      d.email || "no email", "joined " + fmtDate(d.created_at), d.last_sign_in_at ? "last sign-in " + fmtDate(d.last_sign_in_at) : "never signed in",
+      d.confirmed ? "confirmed" : "email not confirmed", d.points + " pts", d.reviews + " reviews", d.places + " listings", d.saves + " saves", d.suggestions + " suggestions",
+    ];
+    var badges = el("div", { className: "chips" }, d.badges.length ? d.badges.map(function (b) {
+      return el("span", { className: "chips" }, [el("code", { text: badgeLabel(b, b.number) }), armed("Revoke", "Really revoke?", function (btn) {
+        call({ op: "awards.revoke", user_id: d.id, badge_id: b.badge_id }).then(function (res) { if (!res.ok) return flash(res.error, true); flash("Revoked " + b.title + " from " + d.name + "."); openMember(d.id); });
+      })]);
+    }) : [el("span", { className: "small-muted", text: "No badges" })]);
+    var award = null;
+    if (state.badges && state.badges.length) {
+      var sel = el("select", { name: "badge_id" }, state.badges.map(function (b) { return el("option", { value: b.id, text: b.title }); }));
+      award = el("div", { className: "chips" }, [sel, el("button", { className: "button quiet small", text: "Award", onClick: function () {
+        call({ op: "awards.grant", user_id: d.id, badge_id: sel.value }).then(function (res) {
+          if (!res.ok) return flash(res.error, true);
+          var b = state.badges.filter(function (x) { return x.id === sel.value; })[0];
+          flash((res.data.already ? d.name + " already held " : "Awarded ") + badgeLabel(b, res.data.number) + (res.data.already ? "." : " to " + d.name + "."));
+          openMember(d.id);
+        });
+      } })]);
+    }
+    var claims = d.claims.length ? el("ul", {}, d.claims.map(function (c) {
+      return el("li", { text: c.place.name + " — " + (c.rejected_at ? "rejected" : c.verified ? "verified owner" : "pending") + " · " + fmtDate(c.created_at) });
+    })) : null;
+    return el("div", { className: "card" }, [
+      el("h4", { text: d.name + (d.area ? " · " + d.area : "") }),
+      el("p", { className: "small-muted", text: facts.join(" · ") }),
+      el("p", { className: "small-muted" }, [el("code", { text: d.id })]),
+      el("h3", { text: "Badges" }), badges, award,
+      claims ? el("h3", { text: "Owner claims" }) : null, claims,
+      el("h3", { text: "Danger" }),
+      el("p", { className: "small-muted", text: "Deletes the account, their reviews, saves, claims and photos. Listings they shared stay, without their name. Same as the app's Delete account." }),
+      el("div", { className: "actions" }, [armed("Delete this account", "Really delete " + (d.email || d.name) + "?", function (btn) {
+        call({ op: "members.delete", user_id: d.id }).then(function (res) {
+          if (!res.ok) { btn.disabled = false; return flash(res.error, true); }
+          state.members.detail = null; state.members.selected = null;
+          flash("Deleted " + (res.data.email || d.name) + ". Photos removed: " + res.data.photos + ", proof files: " + res.data.evidence + ".");
+          searchMembers();
+        });
+      })]),
+    ]);
+  }
+
+  // ── listings ───────────────────────────────────────────────────────────────
+  function listingsView() {
+    var l = state.listings;
+    var q = el("input", { type: "search", name: "q", value: l.q, placeholder: "listing name (empty = newest 50)" });
+    var form = el("form", { className: "grid2" }, [el("label", {}, ["Find a listing", q]), el("div", { className: "actions" }, [el("button", { type: "submit", className: "button", text: "Search" })])]);
+    form.addEventListener("submit", function (e) { e.preventDefault(); l.q = q.value; searchListings(); });
+    var out = [el("h2", { text: "Listings shared by members" }), form];
+    if (!l.rows) out.push(el("p", { className: "state", text: "Loading…" }));
+    else if (!l.rows.length) out.push(el("p", { className: "state", text: "No listing matches." }));
+    else out.push(table(["Listing", "Shared by", "Reviews", "Owner claim", "Status", ""], l.rows.map(function (p) {
+      var status = p.closed_at ? el("span", { className: "pill off", text: "closed " + fmtDate(p.closed_at) }) : p.open_reports ? el("span", { className: "pill warn", text: p.open_reports + " open report" + (p.open_reports === 1 ? "" : "s") }) : el("span", { className: "pill on", text: "listed" });
+      var act = p.closed_at
+        ? armed("Reopen", "Really reopen?", function () { call({ op: "listings.reopen", place_id: p.id }).then(function (res) { if (!res.ok) return flash(res.error, true); flash("Reopened " + p.name + "."); searchListings(); }); }, false)
+        : armed("Close place", "Really close?", function () { call({ op: "listings.close", place_id: p.id }).then(function (res) { if (!res.ok) return flash(res.error, true); flash("Closed " + p.name + "."); searchListings(); refreshOpenCount(); }); });
+      return el("tr", {}, [
+        el("td", {}, [el("div", { text: p.name }), el("div", { className: "id", text: [p.category, p.area, fmtDate(p.created_at), p.photos + " photos"].filter(Boolean).join(" · ") })]),
+        el("td", { text: p.owner || "(account deleted)" }), el("td", { text: String(p.reviews) }),
+        el("td", { text: p.claim === "verified" ? "verified" : p.claim === "pending" ? "pending" : "" }),
+        el("td", {}, [status]), el("td", {}, [act]),
+      ]);
+    })));
+    return out;
+  }
+  function searchListings() {
+    return call({ op: "listings.list", q: state.listings.q, limit: 50 }).then(function (res) {
+      if (!res.ok) return flash(res.error, true);
+      state.listings.rows = res.data; render();
+    });
+  }
+
+  // ── reviews ────────────────────────────────────────────────────────────────
+  function reviewsView() {
+    var r = state.reviews;
+    var q = el("input", { type: "search", name: "q", value: r.q, placeholder: "words in the review or the author's name (empty = newest 50)" });
+    var form = el("form", { className: "grid2" }, [el("label", {}, ["Find a review", q]), el("div", { className: "actions" }, [el("button", { type: "submit", className: "button", text: "Search" })])]);
+    form.addEventListener("submit", function (e) { e.preventDefault(); r.q = q.value; searchReviews(); });
+    var out = [el("h2", { text: "Reviews" }), form];
+    if (!r.rows) out.push(el("p", { className: "state", text: "Loading…" }));
+    else if (!r.rows.length) out.push(el("p", { className: "state", text: "No review matches." }));
+    else out.push(table(["When", "Place", "Author", "★", "Review", "Helpful", ""], r.rows.map(function (v) {
+      return el("tr", {}, [
+        el("td", { text: fmtDate(v.created_at) }), el("td", { text: v.place.name }), el("td", { text: v.author_name }), el("td", { text: String(v.rating) }),
+        el("td", { className: "excerpt" }, [el("div", { text: v.body || "(no text)" }), v.photos.length ? el("div", { className: "id" }, v.photos.map(function (u, i) { return el("a", { href: u, target: "_blank", rel: "noopener", text: "photo " + (i + 1) + " " }); })) : null]),
+        el("td", { text: String(v.votes) }),
+        el("td", {}, [armed("Delete", "Really delete?", function () {
+          call({ op: "reviews.delete", id: v.id }).then(function (res) { if (!res.ok) return flash(res.error, true); flash("Deleted " + v.author_name + "'s review of " + v.place.name + "."); searchReviews(); });
+        })]),
+      ]);
+    })));
+    return out;
+  }
+  function searchReviews() {
+    return call({ op: "reviews.list", q: state.reviews.q, limit: 50 }).then(function (res) {
+      if (!res.ok) return flash(res.error, true);
+      state.reviews.rows = res.data; render();
+    });
+  }
+
+  // ── badges ─────────────────────────────────────────────────────────────────
+  function badgesView() {
+    if (!state.badges) return [el("h2", { text: "Badges" }), el("p", { className: "state", text: "Loading…" })];
+    var parts = [el("h2", { text: "Badges" }), badgesTable(), el("div", { className: "actions" }, [
+      el("button", { className: "button", text: "New badge", onClick: function () { state.editing = {}; state.message = null; render(); } }),
+    ])];
+    if (state.editing) parts.push(badgeForm(state.editing));
+    parts.push(el("h3", { text: "Award a badge by email" }), awardForm());
+    return parts;
+  }
+  function refreshBadges() { return call({ op: "badges.list" }).then(function (res) { if (!res.ok) return flash(res.error, true); state.badges = res.data; render(); }); }
   function badgesTable() {
     if (!state.badges.length) return el("p", { className: "state", text: "No badges yet." });
     var rows = state.badges.map(function (b) {
@@ -243,7 +596,7 @@
       var actions = el("div", { className: "chips" }, [
         el("button", { className: "button quiet small", text: "Edit", onClick: function () { state.editing = b; state.message = null; render(); } }),
         el("button", { className: "button quiet small", text: holders ? "Hide holders" : "Holders", onClick: function () { toggleHolders(b); } }),
-        b.awarded === 0 ? el("button", { className: "button quiet small", text: "Delete", onClick: function () { removeBadge(b, this); } }) : null,
+        b.awarded === 0 ? armed("Delete", "Really delete?", function () { call({ op: "badges.delete", id: b.id }).then(function (res) { if (!res.ok) return flash(res.error, true); flash("Deleted " + b.title + "."); refreshBadges(); }); }) : null,
       ]);
       var tr = el("tr", {}, [
         el("td", {}, [el("div", { text: b.title }), el("div", { className: "id", text: b.id + " · " + b.icon + (b.numbered ? " · numbered" : "") })]),
@@ -254,52 +607,34 @@
       ]);
       return holders ? [tr, holdersRow(b, holders)] : [tr];
     });
-    var flat = [].concat.apply([], rows);
-    var table = el("table", { className: "data" }, [
-      el("thead", {}, [el("tr", {}, ["Badge", "Awarded", "Code", "Window", ""].map(function (h) { return el("th", { text: h }); }))]),
-      el("tbody", {}, flat),
-    ]);
-    return el("div", { className: "scroll" }, [table]);
+    return table(["Badge", "Awarded", "Code", "Window", ""], [].concat.apply([], rows));
   }
-
   function holdersRow(b, holders) {
     var cell = el("td", { colspan: "5" });
     if (holders === "loading") cell.appendChild(el("p", { className: "state", text: "Loading holders…" }));
     else if (!holders.length) cell.appendChild(el("p", { className: "state", text: "Nobody holds " + b.title + " yet." }));
-    else {
-      var list = el("table", { className: "data" }, [
-        el("thead", {}, [el("tr", {}, ["#", "Member", "Email", "Awarded", "How", ""].map(function (h) { return el("th", { text: h }); }))]),
-        el("tbody", {}, holders.map(function (h) {
-          return el("tr", {}, [
-            el("td", { text: h.number == null ? "" : String(h.number) }),
-            el("td", { text: h.name }),
-            el("td", { text: h.email }),
-            el("td", { text: fmtDate(h.awarded_at) }),
-            el("td", { text: h.how }),
-            el("td", {}, [el("button", { className: "button quiet small", text: "Revoke", onClick: function () { revoke(b, h, this); } })]),
-          ]);
-        })),
+    else cell.appendChild(table(["#", "Member", "Email", "Awarded", "How", ""], holders.map(function (h) {
+      return el("tr", {}, [
+        el("td", { text: h.number == null ? "" : String(h.number) }), el("td", { text: h.name }), el("td", { text: h.email }), el("td", { text: fmtDate(h.awarded_at) }), el("td", { text: h.how }),
+        el("td", {}, [armed("Revoke", "Really revoke?", function () {
+          call({ op: "awards.revoke", user_id: h.user_id, badge_id: b.id }).then(function (res) { if (!res.ok) return flash(res.error, true); flash("Revoked " + b.title + " from " + h.name + "."); delete state.holders[b.id]; refreshBadges(); });
+        })]),
       ]);
-      cell.appendChild(el("div", { className: "scroll" }, [list]));
-    }
+    })));
     return el("tr", {}, [cell]);
   }
-
   function toggleHolders(b) {
     if (state.holders[b.id]) { delete state.holders[b.id]; return render(); }
-    state.holders[b.id] = "loading";
-    render();
+    state.holders[b.id] = "loading"; render();
     call({ op: "awards.list", badge_id: b.id }).then(function (res) {
       if (!res.ok) { delete state.holders[b.id]; return flash(res.error, true); }
-      state.holders[b.id] = res.data;
-      render();
+      state.holders[b.id] = res.data; render();
     });
   }
-
   function badgeForm(b) {
     var isNew = !b.id;
     var f = {
-      id: el("input", { type: "text", name: "id", value: b.id || "", placeholder: "food-crawl-2026", pattern: "[a-z0-9][a-z0-9\-]{1,39}", required: true, disabled: !isNew }),
+      id: el("input", { type: "text", name: "id", value: b.id || "", placeholder: "food-crawl-2026", pattern: "[a-z0-9][a-z0-9\\-]{1,39}", required: true, disabled: !isNew }),
       title: el("input", { type: "text", name: "title", value: b.title || "", placeholder: "Food Crawl 2026", maxlength: "60", required: true }),
       description: el("textarea", { name: "description", maxlength: "300", placeholder: "One sentence the holder reads when they tap the badge." }),
       icon: el("select", { name: "icon" }, ICONS.map(function (i) { return el("option", { value: i, text: i, selected: (b.icon || "trophy") === i }); })),
@@ -315,16 +650,11 @@
     var cancel = el("button", { type: "button", className: "button quiet", text: "Cancel", onClick: function () { state.editing = null; render(); } });
     var form = el("form", {}, [
       el("h3", { text: isNew ? "New badge" : "Edit " + b.title }),
-      el("div", { className: "grid2" }, [
-        el("label", {}, ["Id (never shown, cannot change later)", f.id]),
-        el("label", {}, ["Title", f.title]),
-      ]),
+      el("div", { className: "grid2" }, [el("label", {}, ["Id (never shown, cannot change later)", f.id]), el("label", {}, ["Title", f.title])]),
       el("label", {}, ["Description", f.description]),
       el("div", { className: "grid2" }, [
-        el("label", {}, ["Icon", f.icon]),
-        el("label", {}, ["Cap (empty = unlimited)", f.max_awards]),
-        el("label", {}, ["Opens", f.opens_at]),
-        el("label", {}, ["Closes", f.closes_at]),
+        el("label", {}, ["Icon", f.icon]), el("label", {}, ["Cap (empty = unlimited)", f.max_awards]),
+        el("label", {}, ["Opens", f.opens_at]), el("label", {}, ["Closes", f.closes_at]),
         el("label", {}, ["Sort order (lower shows first)", f.sort_order]),
       ]),
       el("label", { className: "row" }, [f.numbered, "Numbered — #001, #002… in award order"]),
@@ -334,35 +664,25 @@
     form.addEventListener("submit", function (e) {
       e.preventDefault();
       save.disabled = true;
-      call({
-        op: "badges.save",
-        id: isNew ? f.id.value.trim().toLowerCase() : b.id,
-        title: f.title.value,
-        description: f.description.value,
-        icon: f.icon.value,
-        numbered: f.numbered.checked,
-        max_awards: f.max_awards.value === "" ? null : Number(f.max_awards.value),
-        opens_at: fromLocalInput(f.opens_at.value),
-        closes_at: fromLocalInput(f.closes_at.value),
-        auto_award: f.auto_award.checked,
-        sort_order: Number(f.sort_order.value || 100),
+      call({ op: "badges.save", id: isNew ? f.id.value.trim().toLowerCase() : b.id, title: f.title.value, description: f.description.value, icon: f.icon.value,
+        numbered: f.numbered.checked, max_awards: f.max_awards.value === "" ? null : Number(f.max_awards.value),
+        opens_at: fromLocalInput(f.opens_at.value), closes_at: fromLocalInput(f.closes_at.value), auto_award: f.auto_award.checked, sort_order: Number(f.sort_order.value || 100),
       }).then(function (res) {
         save.disabled = false;
         if (!res.ok) return flash(res.error, true);
         state.editing = null;
         state.message = { text: (isNew ? "Created " : "Saved ") + res.data.title + ".", error: false };
-        refresh();
+        refreshBadges();
       });
     });
     return el("div", { className: "card" }, [form]);
   }
-
   function awardForm() {
     var email = el("input", { type: "email", name: "email", placeholder: "member@example.com", required: true });
     var badge = el("select", { name: "badge_id" }, state.badges.map(function (b) { return el("option", { value: b.id, text: b.title }); }));
     var button = el("button", { type: "submit", className: "button", text: "Award", disabled: !state.badges.length });
     var form = el("form", {}, [
-      el("p", { className: "state", text: "The member must already have a Toos account under this email." }),
+      el("p", { className: "state", text: "The member must already have a Toos account under this email. The Members tab can award by name too." }),
       el("div", { className: "grid2" }, [el("label", {}, ["Member's email", email]), el("label", {}, ["Badge", badge])]),
       el("div", { className: "actions" }, [button]),
     ]);
@@ -373,65 +693,32 @@
       call({ op: "awards.grant", email: email.value, badge_id: badge.value }).then(function (res) {
         button.disabled = false;
         if (!res.ok) return flash(res.error, true);
-        var label = b ? b.title + (b.numbered && res.data.number != null ? " #" + pad(res.data.number, b.max_awards) : "") : badge.value;
+        var label = b ? badgeLabel(b, res.data.number) : badge.value;
         state.message = { text: (res.data.already ? res.data.name + " already held " : "Awarded ") + label + (res.data.already ? "." : " to " + res.data.name + " (" + email.value.trim() + ")."), error: false };
         if (state.holders[badge.value]) delete state.holders[badge.value];
-        refresh();
+        refreshBadges();
       });
     });
     return el("div", { className: "card" }, [form]);
   }
-
   function setCode(b, code) {
     call({ op: "badges.code", id: b.id, code: code }).then(function (res) {
       if (!res.ok) return flash(res.error, true);
       state.message = { text: code ? "Code for " + b.title + " is " + res.data.code + ". Share it with the people who should have the badge." : "Code for " + b.title + " turned off.", error: false };
-      refresh();
+      refreshBadges();
     });
   }
-
-  function removeBadge(b, button) {
-    if (button.textContent !== "Really delete?") { button.textContent = "Really delete?"; button.className = "button danger small"; return; }
-    call({ op: "badges.delete", id: b.id }).then(function (res) {
-      if (!res.ok) return flash(res.error, true);
-      state.message = { text: "Deleted " + b.title + ".", error: false };
-      refresh();
-    });
-  }
-
-  function revoke(b, h, button) {
-    if (button.textContent !== "Really revoke?") { button.textContent = "Really revoke?"; button.className = "button danger small"; return; }
-    call({ op: "awards.revoke", user_id: h.user_id, badge_id: b.id }).then(function (res) {
-      if (!res.ok) return flash(res.error, true);
-      state.message = { text: "Revoked " + b.title + " from " + h.name + ".", error: false };
-      delete state.holders[b.id];
-      refresh();
-    });
-  }
-
   function copy(text, button) {
     var done = function () { button.textContent = "Copied"; setTimeout(function () { button.textContent = "Copy"; }, 1500); };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, function () { window.prompt("Copy the code", text); });
     else window.prompt("Copy the code", text);
   }
-
-  // TOOS-XXXX-XXXX from an alphabet without look-alikes (no 0/O, 1/I).
   function randomCode() {
-    var alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    var bytes = new Uint8Array(8);
+    var alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", bytes = new Uint8Array(8), s = "";
     crypto.getRandomValues(bytes);
-    var s = "";
     for (var i = 0; i < 8; i++) s += alphabet[bytes[i] % alphabet.length];
     return "TOOS-" + s.slice(0, 4) + "-" + s.slice(4);
   }
-
-  function pad(n, cap) {
-    var width = cap ? String(cap).length : 1;
-    var s = String(n);
-    while (s.length < width) s = "0" + s;
-    return s;
-  }
-
   function toLocalInput(iso) {
     if (!iso) return "";
     var d = new Date(iso);
@@ -439,16 +726,46 @@
     var p = function (x) { return (x < 10 ? "0" : "") + x; };
     return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + "T" + p(d.getHours()) + ":" + p(d.getMinutes());
   }
+  function fromLocalInput(v) { if (!v) return null; var d = new Date(v); return isNaN(d) ? null : d.toISOString(); }
 
-  function fromLocalInput(v) {
-    if (!v) return null;
-    var d = new Date(v);
-    return isNaN(d) ? null : d.toISOString();
+  // ── audit ──────────────────────────────────────────────────────────────────
+  function auditView() {
+    var out = [el("h2", { text: "Audit log" })];
+    if (!state.audit) return out.concat([el("p", { className: "state", text: "Loading…" })]);
+    if (!state.audit.length) return out.concat([el("p", { className: "state", text: "Nothing yet." })]);
+    out.push(table(["When", "Who", "What", "Target", "Detail"], state.audit.map(function (a) {
+      return el("tr", {}, [el("td", { text: fmtTime(a.at) }), el("td", { text: a.actor }), el("td", { text: a.op }), el("td", {}, [el("code", { text: a.target || "" })]),
+        el("td", { className: "small-muted", text: a.detail ? JSON.stringify(a.detail) : "" })]);
+    })));
+    var last = state.audit[state.audit.length - 1];
+    out.push(el("div", { className: "actions" }, [el("button", { className: "button quiet small", text: "Load older", onClick: function () {
+      call({ op: "audit.list", limit: 100, before: last.id }).then(function (res) { if (!res.ok) return flash(res.error, true); state.audit = state.audit.concat(res.data); render(); });
+    } })]));
+    return out;
   }
 
-  sb.auth.getSession().then(function (r) {
-    if (r.data && r.data.session) start(); else showLogin();
-  });
+  // ── admins ─────────────────────────────────────────────────────────────────
+  function adminsView() {
+    var out = [el("h2", { text: "Admins" }), el("p", { className: "state", text: "Anyone listed here can sign in to this page with their Toos account. An admin set in the function's secret cannot be removed from here." })];
+    if (!state.admins) return out.concat([el("p", { className: "state", text: "Loading…" })]);
+    out.push(table(["Email", "Added by", "Added", ""], state.admins.map(function (a) {
+      var removable = !a.fixed && a.email !== state.email;
+      return el("tr", {}, [el("td", { text: a.email }), el("td", { text: a.added_by || "" }), el("td", { text: a.added_at ? fmtDate(a.added_at) : "" }),
+        el("td", {}, [a.fixed ? el("span", { className: "pill on", text: "fixed" }) : a.email === state.email ? el("span", { className: "pill off", text: "you" }) : removable ? armed("Remove", "Really remove?", function () {
+          call({ op: "admins.remove", email: a.email }).then(function (res) { if (!res.ok) return flash(res.error, true); flash("Removed " + a.email + "."); loadTab(); });
+        }) : null])]);
+    })));
+    var email = el("input", { type: "email", name: "email", placeholder: "person@example.com", required: true });
+    var form = el("form", { className: "grid2" }, [el("label", {}, ["Add an admin (they need a Toos account under this email)", email]), el("div", { className: "actions" }, [el("button", { type: "submit", className: "button", text: "Add admin" })])]);
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      call({ op: "admins.add", email: email.value }).then(function (res) { if (!res.ok) return flash(res.error, true); flash("Added " + res.data.email + "."); loadTab(); });
+    });
+    out.push(form);
+    return out;
+  }
+
+  sb.auth.getSession().then(function (r) { if (r.data && r.data.session) start(); else showLogin(); });
 })();
 </script>
 </body>
