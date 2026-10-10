@@ -229,7 +229,7 @@
 
   // ── app state ──────────────────────────────────────────────────────────────
   var state = { email: "", fixed: false, tab: "dashboard", message: null, open: 0,
-    stats: null, moderation: null, members: { q: "", rows: null, selected: null, detail: null },
+    stats: null, moderation: null, members: { q: "", page: 1, pages: 1, total: 0, rows: null, selected: null, detail: null },
     listings: { q: "", rows: null }, reviews: { q: "", rows: null },
     badges: null, holders: {}, editing: null, audit: null, admins: null };
 
@@ -273,6 +273,7 @@
     var t = state.tab;
     if (t === "dashboard") return refreshOpenCount();
     if (t === "moderation") return call({ op: "moderation.list" }).then(function (res) { if (!res.ok) return flash(res.error, true); state.moderation = res.data; render(); });
+    if (t === "members") return listMembers();
     if (t === "badges") return call({ op: "badges.list" }).then(function (res) { if (!res.ok) return flash(res.error, true); state.badges = res.data; render(); });
     if (t === "listings") return searchListings();
     if (t === "reviews") return searchReviews();
@@ -433,13 +434,15 @@
   // ── members ────────────────────────────────────────────────────────────────
   function membersView() {
     var m = state.members;
-    var q = el("input", { type: "search", name: "q", value: m.q, placeholder: "name or email" });
-    var form = el("form", { className: "grid2" }, [el("label", {}, ["Find a member", q]), el("div", { className: "actions" }, [el("button", { type: "submit", className: "button", text: "Search" })])]);
-    form.addEventListener("submit", function (e) { e.preventDefault(); m.q = q.value; m.selected = null; m.detail = null; searchMembers(); });
+    var q = el("input", { type: "search", name: "q", value: m.q, placeholder: "name or email (empty = everyone)" });
+    var clear = m.q ? el("button", { type: "button", className: "button quiet", text: "Clear", onClick: function () { m.q = ""; m.page = 1; m.selected = null; m.detail = null; listMembers(); } }) : null;
+    var form = el("form", { className: "grid2" }, [el("label", {}, ["Find a member", q]), el("div", { className: "actions" }, [el("button", { type: "submit", className: "button", text: "Search" }), clear])]);
+    form.addEventListener("submit", function (e) { e.preventDefault(); m.q = q.value; m.page = 1; m.selected = null; m.detail = null; listMembers(); });
     var out = [el("h2", { text: "Members" }), form];
-    if (m.rows) {
-      if (!m.rows.length) out.push(el("p", { className: "state", text: "No member matches “" + m.q + "”." }));
-      else out.push(table(["Name", "Email", "Area", "Joined", "Last sign-in", ""], m.rows.map(function (u) {
+    if (!m.rows) out.push(el("p", { className: "state", text: "Loading…" }));
+    else if (!m.rows.length) out.push(el("p", { className: "state", text: m.q ? "No member matches “" + m.q + "”." : "No members yet." }));
+    else {
+      out.push(table(["Name", "Email", "Area", "Joined", "Last sign-in", ""], m.rows.map(function (u) {
         var tr = el("tr", { className: "click" + (u.id === m.selected ? " sel" : "") }, [
           el("td", { text: u.name }), el("td", { text: u.email || "—" }), el("td", { text: u.area || "" }), el("td", { text: fmtDate(u.created_at) }),
           el("td", { text: u.last_sign_in_at ? fmtDate(u.last_sign_in_at) : "never" }),
@@ -448,16 +451,27 @@
         tr.addEventListener("click", function () { openMember(u.id); });
         return tr;
       })));
+      var first = (m.page - 1) * m.per_page + 1, last = first + m.rows.length - 1;
+      out.push(el("div", { className: "who" }, [
+        el("span", { text: (m.q ? "Matching " : "") + first + "–" + last + " of " + m.total + " · page " + m.page + " of " + m.pages }),
+        el("div", { className: "chips" }, [
+          el("button", { className: "button quiet small", text: "← Newer", disabled: m.page <= 1, onClick: function () { m.page -= 1; m.selected = null; m.detail = null; listMembers(); } }),
+          el("button", { className: "button quiet small", text: "Older →", disabled: m.page >= m.pages, onClick: function () { m.page += 1; m.selected = null; m.detail = null; listMembers(); } }),
+        ]),
+      ]));
     }
     if (m.detail) out.push(memberCard(m.detail));
     return out;
   }
-  function searchMembers() {
-    call({ op: "members.search", q: state.members.q }).then(function (res) {
+  function listMembers() {
+    var m = state.members;
+    return call({ op: "members.list", q: m.q, page: m.page }).then(function (res) {
       if (!res.ok) return flash(res.error, true);
-      state.members.rows = res.data; render();
+      m.rows = res.data.rows; m.page = res.data.page; m.pages = res.data.pages; m.total = res.data.total; m.per_page = res.data.per_page;
+      render();
     });
   }
+  function searchMembers() { return listMembers(); }
   function openMember(id) {
     state.members.selected = id; state.members.detail = null; render();
     call({ op: "members.get", user_id: id }).then(function (res) {
