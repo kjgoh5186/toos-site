@@ -352,7 +352,8 @@
       tile(s.votes, "helpful votes"), tile(s.saves, "saves"), tile(s.badges_awarded, "badges awarded"),
       tile(state.open, "waiting for a decision"), tile(s.claims_verified, "verified owners"), tile(s.places_closed, "places closed"),
     ]);
-    var rows = (s.daily || []).map(function (d) {
+    // The server lists the days oldest first; show today at the top like every other list here.
+    var rows = (s.daily || []).slice().sort(function (a, b) { return a.day < b.day ? 1 : a.day > b.day ? -1 : 0; }).map(function (d) {
       return el("tr", {}, [el("td", { text: fmtDay(d.day) }), el("td", { text: String(d.members) }), el("td", { text: String(d.places) }),
         el("td", { text: String(d.reviews) }), el("td", { text: String(d.votes) }), el("td", { text: String(d.saves) })]);
     });
