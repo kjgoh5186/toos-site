@@ -229,9 +229,9 @@
 
   // ── app state ──────────────────────────────────────────────────────────────
   var state = { email: "", fixed: false, tab: "dashboard", message: null, open: 0,
-    stats: null, moderation: null, members: { q: "", page: 1, pages: 1, total: 0, rows: null, selected: null, detail: null },
-    listings: { q: "", rows: null }, reviews: { q: "", rows: null },
-    badges: null, holders: {}, editing: null, audit: null, admins: null };
+    stats: null, moderation: null, members: Object.assign(paged(), { selected: null, detail: null }),
+    listings: paged(), reviews: paged(), audit: paged(),
+    badges: null, holders: {}, editing: null, admins: null };
 
   function start() {
     panel.replaceChildren(el("p", { className: "state", text: "Checking your account…" }));
@@ -275,9 +275,9 @@
     if (t === "moderation") return call({ op: "moderation.list" }).then(function (res) { if (!res.ok) return flash(res.error, true); state.moderation = res.data; render(); });
     if (t === "members") return listMembers();
     if (t === "badges") return call({ op: "badges.list" }).then(function (res) { if (!res.ok) return flash(res.error, true); state.badges = res.data; render(); });
-    if (t === "listings") return searchListings();
-    if (t === "reviews") return searchReviews();
-    if (t === "audit") return call({ op: "audit.list", limit: 100 }).then(function (res) { if (!res.ok) return flash(res.error, true); state.audit = res.data; render(); });
+    if (t === "listings") return loadListings();
+    if (t === "reviews") return loadReviews();
+    if (t === "audit") return loadAudit();
     if (t === "admins") return call({ op: "admins.list" }).then(function (res) { if (!res.ok) return flash(res.error, true); state.admins = res.data; render(); });
     render();
   }
@@ -431,16 +431,47 @@
     });
   }
 
+  // ── pages ──────────────────────────────────────────────────────────────────
+  // Members, listings, reviews and the audit log all list twenty rows a page,
+  // newest first, with the search box as a filter rather than the only way in.
+  function paged() { return { q: "", page: 1, pages: 1, total: 0, per_page: 20, rows: null }; }
+  function loadPage(s, op) {
+    return call({ op: op, q: s.q, page: s.page }).then(function (res) {
+      if (!res.ok) return flash(res.error, true);
+      s.rows = res.data.rows; s.page = res.data.page; s.pages = res.data.pages; s.total = res.data.total; s.per_page = res.data.per_page;
+      render();
+    });
+  }
+  // The search form: Search filters from page 1; Clear, shown while filtering, brings everything back.
+  function finder(s, label, placeholder, reload) {
+    var q = el("input", { type: "search", name: "q", value: s.q, placeholder: placeholder });
+    var clear = s.q ? el("button", { type: "button", className: "button quiet", text: "Clear", onClick: function () { s.q = ""; s.page = 1; reload(); } }) : null;
+    var form = el("form", { className: "grid2" }, [el("label", {}, [label, q]), el("div", { className: "actions" }, [el("button", { type: "submit", className: "button", text: "Search" }), clear])]);
+    form.addEventListener("submit", function (e) { e.preventDefault(); s.q = q.value; s.page = 1; reload(); });
+    return form;
+  }
+  // "21–40 of 143 · page 2 of 8" with Newer / Older, greyed at either end.
+  function pager(s, reload) {
+    var first = (s.page - 1) * s.per_page + 1, last = first + s.rows.length - 1;
+    var go = function (step) { return function () { s.page += step; reload(); }; };
+    return el("div", { className: "who" }, [
+      el("span", { text: (s.q ? "Matching " : "") + first + "–" + last + " of " + s.total + " · page " + s.page + " of " + s.pages }),
+      el("div", { className: "chips" }, [
+        el("button", { className: "button quiet small", text: "← Newer", disabled: s.page <= 1, onClick: go(-1) }),
+        el("button", { className: "button quiet small", text: "Older →", disabled: s.page >= s.pages, onClick: go(1) }),
+      ]),
+    ]);
+  }
+  function nothing(s, one, many) {
+    return el("p", { className: "state", text: s.q ? "No " + one + " matches “" + s.q + "”." : "No " + (many || one + "s") + " yet." });
+  }
+
   // ── members ────────────────────────────────────────────────────────────────
   function membersView() {
     var m = state.members;
-    var q = el("input", { type: "search", name: "q", value: m.q, placeholder: "name or email (empty = everyone)" });
-    var clear = m.q ? el("button", { type: "button", className: "button quiet", text: "Clear", onClick: function () { m.q = ""; m.page = 1; m.selected = null; m.detail = null; listMembers(); } }) : null;
-    var form = el("form", { className: "grid2" }, [el("label", {}, ["Find a member", q]), el("div", { className: "actions" }, [el("button", { type: "submit", className: "button", text: "Search" }), clear])]);
-    form.addEventListener("submit", function (e) { e.preventDefault(); m.q = q.value; m.page = 1; m.selected = null; m.detail = null; listMembers(); });
-    var out = [el("h2", { text: "Members" }), form];
+    var out = [el("h2", { text: "Members" }), finder(m, "Find a member", "name or email (empty = everyone)", turnMembers)];
     if (!m.rows) out.push(el("p", { className: "state", text: "Loading…" }));
-    else if (!m.rows.length) out.push(el("p", { className: "state", text: m.q ? "No member matches “" + m.q + "”." : "No members yet." }));
+    else if (!m.rows.length) out.push(nothing(m, "member"));
     else {
       out.push(table(["Name", "Email", "Area", "Joined", "Last sign-in", ""], m.rows.map(function (u) {
         var tr = el("tr", { className: "click" + (u.id === m.selected ? " sel" : "") }, [
@@ -451,26 +482,14 @@
         tr.addEventListener("click", function () { openMember(u.id); });
         return tr;
       })));
-      var first = (m.page - 1) * m.per_page + 1, last = first + m.rows.length - 1;
-      out.push(el("div", { className: "who" }, [
-        el("span", { text: (m.q ? "Matching " : "") + first + "–" + last + " of " + m.total + " · page " + m.page + " of " + m.pages }),
-        el("div", { className: "chips" }, [
-          el("button", { className: "button quiet small", text: "← Newer", disabled: m.page <= 1, onClick: function () { m.page -= 1; m.selected = null; m.detail = null; listMembers(); } }),
-          el("button", { className: "button quiet small", text: "Older →", disabled: m.page >= m.pages, onClick: function () { m.page += 1; m.selected = null; m.detail = null; listMembers(); } }),
-        ]),
-      ]));
+      out.push(pager(m, turnMembers));
     }
     if (m.detail) out.push(memberCard(m.detail));
     return out;
   }
-  function listMembers() {
-    var m = state.members;
-    return call({ op: "members.list", q: m.q, page: m.page }).then(function (res) {
-      if (!res.ok) return flash(res.error, true);
-      m.rows = res.data.rows; m.page = res.data.page; m.pages = res.data.pages; m.total = res.data.total; m.per_page = res.data.per_page;
-      render();
-    });
-  }
+  function listMembers() { return loadPage(state.members, "members.list"); }
+  // Another page or filter: whatever record was open belongs to the old page.
+  function turnMembers() { state.members.selected = null; state.members.detail = null; return listMembers(); }
   function searchMembers() { return listMembers(); }
   function openMember(id) {
     state.members.selected = id; state.members.detail = null; render();
@@ -527,60 +546,50 @@
   // ── listings ───────────────────────────────────────────────────────────────
   function listingsView() {
     var l = state.listings;
-    var q = el("input", { type: "search", name: "q", value: l.q, placeholder: "listing name (empty = newest 50)" });
-    var form = el("form", { className: "grid2" }, [el("label", {}, ["Find a listing", q]), el("div", { className: "actions" }, [el("button", { type: "submit", className: "button", text: "Search" })])]);
-    form.addEventListener("submit", function (e) { e.preventDefault(); l.q = q.value; searchListings(); });
-    var out = [el("h2", { text: "Listings shared by members" }), form];
+    var out = [el("h2", { text: "Listings shared by members" }), finder(l, "Find a listing", "listing name (empty = every listing)", loadListings)];
     if (!l.rows) out.push(el("p", { className: "state", text: "Loading…" }));
-    else if (!l.rows.length) out.push(el("p", { className: "state", text: "No listing matches." }));
-    else out.push(table(["Listing", "Shared by", "Reviews", "Owner claim", "Status", ""], l.rows.map(function (p) {
-      var status = p.closed_at ? el("span", { className: "pill off", text: "closed " + fmtDate(p.closed_at) }) : p.open_reports ? el("span", { className: "pill warn", text: p.open_reports + " open report" + (p.open_reports === 1 ? "" : "s") }) : el("span", { className: "pill on", text: "listed" });
-      var act = p.closed_at
-        ? armed("Reopen", "Really reopen?", function () { call({ op: "listings.reopen", place_id: p.id }).then(function (res) { if (!res.ok) return flash(res.error, true); flash("Reopened " + p.name + "."); searchListings(); }); }, false)
-        : armed("Close place", "Really close?", function () { call({ op: "listings.close", place_id: p.id }).then(function (res) { if (!res.ok) return flash(res.error, true); flash("Closed " + p.name + "."); searchListings(); refreshOpenCount(); }); });
-      return el("tr", {}, [
-        el("td", {}, [el("div", { text: p.name }), el("div", { className: "id", text: [p.category, p.area, fmtDate(p.created_at), p.photos + " photos"].filter(Boolean).join(" · ") })]),
-        el("td", { text: p.owner || "(account deleted)" }), el("td", { text: String(p.reviews) }),
-        el("td", { text: p.claim === "verified" ? "verified" : p.claim === "pending" ? "pending" : "" }),
-        el("td", {}, [status]), el("td", {}, [act]),
-      ]);
-    })));
+    else if (!l.rows.length) out.push(nothing(l, "listing"));
+    else {
+      out.push(table(["Listing", "Shared by", "Reviews", "Owner claim", "Status", ""], l.rows.map(function (p) {
+        var status = p.closed_at ? el("span", { className: "pill off", text: "closed " + fmtDate(p.closed_at) }) : p.open_reports ? el("span", { className: "pill warn", text: p.open_reports + " open report" + (p.open_reports === 1 ? "" : "s") }) : el("span", { className: "pill on", text: "listed" });
+        var act = p.closed_at
+          ? armed("Reopen", "Really reopen?", function () { call({ op: "listings.reopen", place_id: p.id }).then(function (res) { if (!res.ok) return flash(res.error, true); flash("Reopened " + p.name + "."); loadListings(); }); }, false)
+          : armed("Close place", "Really close?", function () { call({ op: "listings.close", place_id: p.id }).then(function (res) { if (!res.ok) return flash(res.error, true); flash("Closed " + p.name + "."); loadListings(); refreshOpenCount(); }); });
+        return el("tr", {}, [
+          el("td", {}, [el("div", { text: p.name }), el("div", { className: "id", text: [p.category, p.area, fmtDate(p.created_at), p.photos + " photos"].filter(Boolean).join(" · ") })]),
+          el("td", { text: p.owner || "(account deleted)" }), el("td", { text: String(p.reviews) }),
+          el("td", { text: p.claim === "verified" ? "verified" : p.claim === "pending" ? "pending" : "" }),
+          el("td", {}, [status]), el("td", {}, [act]),
+        ]);
+      })));
+      out.push(pager(l, loadListings));
+    }
     return out;
   }
-  function searchListings() {
-    return call({ op: "listings.list", q: state.listings.q, limit: 50 }).then(function (res) {
-      if (!res.ok) return flash(res.error, true);
-      state.listings.rows = res.data; render();
-    });
-  }
+  function loadListings() { return loadPage(state.listings, "listings.list"); }
 
   // ── reviews ────────────────────────────────────────────────────────────────
   function reviewsView() {
     var r = state.reviews;
-    var q = el("input", { type: "search", name: "q", value: r.q, placeholder: "words in the review or the author's name (empty = newest 50)" });
-    var form = el("form", { className: "grid2" }, [el("label", {}, ["Find a review", q]), el("div", { className: "actions" }, [el("button", { type: "submit", className: "button", text: "Search" })])]);
-    form.addEventListener("submit", function (e) { e.preventDefault(); r.q = q.value; searchReviews(); });
-    var out = [el("h2", { text: "Reviews" }), form];
+    var out = [el("h2", { text: "Reviews" }), finder(r, "Find a review", "words in the review or the author's name (empty = every review)", loadReviews)];
     if (!r.rows) out.push(el("p", { className: "state", text: "Loading…" }));
-    else if (!r.rows.length) out.push(el("p", { className: "state", text: "No review matches." }));
-    else out.push(table(["When", "Place", "Author", "★", "Review", "Helpful", ""], r.rows.map(function (v) {
-      return el("tr", {}, [
-        el("td", { text: fmtDate(v.created_at) }), el("td", { text: v.place.name }), el("td", { text: v.author_name }), el("td", { text: String(v.rating) }),
-        el("td", { className: "excerpt" }, [el("div", { text: v.body || "(no text)" }), v.photos.length ? el("div", { className: "id" }, v.photos.map(function (u, i) { return el("a", { href: u, target: "_blank", rel: "noopener", text: "photo " + (i + 1) + " " }); })) : null]),
-        el("td", { text: String(v.votes) }),
-        el("td", {}, [armed("Delete", "Really delete?", function () {
-          call({ op: "reviews.delete", id: v.id }).then(function (res) { if (!res.ok) return flash(res.error, true); flash("Deleted " + v.author_name + "'s review of " + v.place.name + "."); searchReviews(); });
-        })]),
-      ]);
-    })));
+    else if (!r.rows.length) out.push(nothing(r, "review"));
+    else {
+      out.push(table(["When", "Place", "Author", "★", "Review", "Helpful", ""], r.rows.map(function (v) {
+        return el("tr", {}, [
+          el("td", { text: fmtDate(v.created_at) }), el("td", { text: v.place.name }), el("td", { text: v.author_name }), el("td", { text: String(v.rating) }),
+          el("td", { className: "excerpt" }, [el("div", { text: v.body || "(no text)" }), v.photos.length ? el("div", { className: "id" }, v.photos.map(function (u, i) { return el("a", { href: u, target: "_blank", rel: "noopener", text: "photo " + (i + 1) + " " }); })) : null]),
+          el("td", { text: String(v.votes) }),
+          el("td", {}, [armed("Delete", "Really delete?", function () {
+            call({ op: "reviews.delete", id: v.id }).then(function (res) { if (!res.ok) return flash(res.error, true); flash("Deleted " + v.author_name + "'s review of " + v.place.name + "."); loadReviews(); });
+          })]),
+        ]);
+      })));
+      out.push(pager(r, loadReviews));
+    }
     return out;
   }
-  function searchReviews() {
-    return call({ op: "reviews.list", q: state.reviews.q, limit: 50 }).then(function (res) {
-      if (!res.ok) return flash(res.error, true);
-      state.reviews.rows = res.data; render();
-    });
-  }
+  function loadReviews() { return loadPage(state.reviews, "reviews.list"); }
 
   // ── badges ─────────────────────────────────────────────────────────────────
   function badgesView() {
@@ -744,19 +753,20 @@
 
   // ── audit ──────────────────────────────────────────────────────────────────
   function auditView() {
-    var out = [el("h2", { text: "Audit log" })];
-    if (!state.audit) return out.concat([el("p", { className: "state", text: "Loading…" })]);
-    if (!state.audit.length) return out.concat([el("p", { className: "state", text: "Nothing yet." })]);
-    out.push(table(["When", "Who", "What", "Target", "Detail"], state.audit.map(function (a) {
-      return el("tr", {}, [el("td", { text: fmtTime(a.at) }), el("td", { text: a.actor }), el("td", { text: a.op }), el("td", {}, [el("code", { text: a.target || "" })]),
-        el("td", { className: "small-muted", text: a.detail ? JSON.stringify(a.detail) : "" })]);
-    })));
-    var last = state.audit[state.audit.length - 1];
-    out.push(el("div", { className: "actions" }, [el("button", { className: "button quiet small", text: "Load older", onClick: function () {
-      call({ op: "audit.list", limit: 100, before: last.id }).then(function (res) { if (!res.ok) return flash(res.error, true); state.audit = state.audit.concat(res.data); render(); });
-    } })]));
+    var a = state.audit;
+    var out = [el("h2", { text: "Audit log" }), finder(a, "Find an entry", "admin email, action or target (empty = everything)", loadAudit)];
+    if (!a.rows) out.push(el("p", { className: "state", text: "Loading…" }));
+    else if (!a.rows.length) out.push(nothing(a, "entry", "entries"));
+    else {
+      out.push(table(["When", "Who", "What", "Target", "Detail"], a.rows.map(function (e) {
+        return el("tr", {}, [el("td", { text: fmtTime(e.at) }), el("td", { text: e.actor }), el("td", { text: e.op }), el("td", {}, [el("code", { text: e.target || "" })]),
+          el("td", { className: "small-muted", text: e.detail ? JSON.stringify(e.detail) : "" })]);
+      })));
+      out.push(pager(a, loadAudit));
+    }
     return out;
   }
+  function loadAudit() { return loadPage(state.audit, "audit.list"); }
 
   // ── admins ─────────────────────────────────────────────────────────────────
   function adminsView() {
