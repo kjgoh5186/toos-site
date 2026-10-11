@@ -57,7 +57,32 @@
   .adm table.data th { color: var(--muted); font-weight: 600; font-size: 13px; letter-spacing: 0.02em; text-transform: uppercase; }
   .adm table.data tr.sel td { background: var(--cream-muted); }
   .adm table.data tr.click { cursor: pointer; }
-  .adm .scroll { overflow-x: auto; }
+  .adm .scroll { overflow-x: auto; margin-top: 14px; }
+  @media (max-width: 759px) {
+    /* Rows become cards (styles.css): room above the first card, no empty
+       cells, no label line on the action cell, and a title size that suits
+       names and dates rather than headlines. */
+    .adm .scroll { margin-top: 22px; }
+    .adm table.data td:first-child { font-size: 18px; }
+    .adm table.data td:empty { display: none; }
+    .adm table.data td:not([data-label])::before { content: none; }
+    .adm table.data td[data-label]:not(:first-child) { padding: 8px 0; }
+    .adm table.data td:last-child:not([data-label]) { padding-top: 12px; }
+    .adm table.data td[colspan] { font-weight: 400; font-size: 15px; border-bottom: 0; }
+    .adm .excerpt { max-width: none; }
+    /* The dashboard: two tiles a row, and the week stays a compact real table. */
+    .adm .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .adm table.data.grid { display: table; font-size: 14px; }
+    .adm table.data.grid thead { position: static; width: auto; height: auto; overflow: visible; clip: auto; white-space: normal; }
+    .adm table.data.grid tbody { display: table-row-group; }
+    .adm table.data.grid tr { display: table-row; border: 0; border-radius: 0; padding: 0; margin: 0; }
+    .adm table.data.grid th, .adm table.data.grid td, .adm table.data.grid td:first-child, .adm table.data.grid td:empty {
+      display: table-cell; width: auto; font-size: 14px; font-weight: 400; padding: 8px 8px 8px 0; margin: 0; border-bottom: 1px solid var(--line);
+    }
+    .adm table.data.grid th { font-size: 11px; font-weight: 600; }
+    .adm table.data.grid td:first-child { font-weight: 600; white-space: nowrap; }
+    .adm table.data.grid td::before { content: none; }
+  }
   .adm .id, .adm .small-muted { color: var(--muted); font-size: 13.5px; }
   .adm code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14px; background: var(--cream-muted); color: var(--ink); padding: 2px 6px; border-radius: 4px; }
   @media (prefers-color-scheme: dark) { .adm code { background: #2d3a2f; } }
@@ -140,11 +165,25 @@
     (children || []).forEach(function (c) { if (c) node.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
     return node;
   }
-  function table(headers, rows) {
-    return el("div", { className: "scroll" }, [el("table", { className: "data" }, [
+  // On a phone the shared stylesheet turns each row into a card and hides the
+  // header row, so every cell carries its column name for the card to show.
+  // A table of small numbers (the dashboard's week) asks for `grid` instead and
+  // stays a real table at every width.
+  function table(headers, rows, opts) {
+    rows.forEach(function (tr) {
+      Array.prototype.forEach.call(tr.children, function (td, i) { if (headers[i] && !td.hasAttribute("colspan")) td.setAttribute("data-label", headers[i]); });
+    });
+    return el("div", { className: "scroll" }, [el("table", { className: "data" + (opts && opts.grid ? " grid" : "") }, [
       el("thead", {}, [el("tr", {}, headers.map(function (h) { return el("th", { text: h }); }))]),
       el("tbody", {}, rows),
     ])]);
+  }
+  // A calendar day ("2026-10-11") as "Sat, Oct 11" — built from its parts so no
+  // time zone can shift it to the day before.
+  function fmtDay(day) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(day || "");
+    if (!m) return day || "";
+    return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
   }
   function fmtDate(iso) {
     if (!iso) return "";
@@ -314,10 +353,10 @@
       tile(state.open, "waiting for a decision"), tile(s.claims_verified, "verified owners"), tile(s.places_closed, "places closed"),
     ]);
     var rows = (s.daily || []).map(function (d) {
-      return el("tr", {}, [el("td", { text: fmtDate(d.day) }), el("td", { text: String(d.members) }), el("td", { text: String(d.places) }),
+      return el("tr", {}, [el("td", { text: fmtDay(d.day) }), el("td", { text: String(d.members) }), el("td", { text: String(d.places) }),
         el("td", { text: String(d.reviews) }), el("td", { text: String(d.votes) }), el("td", { text: String(d.saves) })]);
     });
-    return [el("h2", { text: "Dashboard" }), tiles, el("h3", { text: "Last 7 days" }), table(["Day", "New members", "Listings", "Reviews", "Votes", "Saves"], rows)];
+    return [el("h2", { text: "Dashboard" }), tiles, el("h3", { text: "Last 7 days" }), table(["Day", "New members", "Listings", "Reviews", "Votes", "Saves"], rows, { grid: true })];
   }
 
   // ── moderation ─────────────────────────────────────────────────────────────
@@ -575,9 +614,9 @@
     if (!r.rows) out.push(el("p", { className: "state", text: "Loading…" }));
     else if (!r.rows.length) out.push(nothing(r, "review"));
     else {
-      out.push(table(["When", "Place", "Author", "★", "Review", "Helpful", ""], r.rows.map(function (v) {
+      out.push(table(["Place", "Author", "When", "Stars", "Review", "Helpful", ""], r.rows.map(function (v) {
         return el("tr", {}, [
-          el("td", { text: fmtDate(v.created_at) }), el("td", { text: v.place.name }), el("td", { text: v.author_name }), el("td", { text: String(v.rating) }),
+          el("td", { text: v.place.name }), el("td", { text: v.author_name }), el("td", { text: fmtDate(v.created_at) }), el("td", { text: String(v.rating) }),
           el("td", { className: "excerpt" }, [el("div", { text: v.body || "(no text)" }), v.photos.length ? el("div", { className: "id" }, v.photos.map(function (u, i) { return el("a", { href: u, target: "_blank", rel: "noopener", text: "photo " + (i + 1) + " " }); })) : null]),
           el("td", { text: String(v.votes) }),
           el("td", {}, [armed("Delete", "Really delete?", function () {
@@ -636,9 +675,9 @@
     var cell = el("td", { colspan: "5" });
     if (holders === "loading") cell.appendChild(el("p", { className: "state", text: "Loading holders…" }));
     else if (!holders.length) cell.appendChild(el("p", { className: "state", text: "Nobody holds " + b.title + " yet." }));
-    else cell.appendChild(table(["#", "Member", "Email", "Awarded", "How", ""], holders.map(function (h) {
+    else cell.appendChild(table(["Member", "No.", "Email", "Awarded", "How", ""], holders.map(function (h) {
       return el("tr", {}, [
-        el("td", { text: h.number == null ? "" : String(h.number) }), el("td", { text: h.name }), el("td", { text: h.email }), el("td", { text: fmtDate(h.awarded_at) }), el("td", { text: h.how }),
+        el("td", { text: h.name }), el("td", { text: h.number == null ? "" : String(h.number) }), el("td", { text: h.email }), el("td", { text: fmtDate(h.awarded_at) }), el("td", { text: h.how }),
         el("td", {}, [armed("Revoke", "Really revoke?", function () {
           call({ op: "awards.revoke", user_id: h.user_id, badge_id: b.id }).then(function (res) { if (!res.ok) return flash(res.error, true); flash("Revoked " + b.title + " from " + h.name + "."); delete state.holders[b.id]; refreshBadges(); });
         })]),
