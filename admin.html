@@ -92,6 +92,7 @@
   .adm .pill.warn { background: #f6e0d6; color: var(--red); }
   .adm .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
   .adm .campaign { display: grid; gap: 4px; justify-items: start; margin-top: 6px; }
+  .adm .quote { border-left: 3px solid var(--line); padding-left: 10px; white-space: pre-wrap; }
   .adm .campaign-fields[hidden] { display: none; }
   .adm .card { padding: 16px 18px 14px; margin-bottom: 12px; }
   .adm .card h4 { margin: 0 0 6px; font: 600 18px/1.3 var(--serif); }
@@ -303,7 +304,7 @@
     return call({ op: "stats" }).then(function (res) {
       if (!res.ok) return;
       state.stats = res.data;
-      state.open = (res.data.claims_pending || 0) + (res.data.reports_open || 0) + (res.data.edits_open || 0);
+      state.open = (res.data.claims_pending || 0) + (res.data.reports_open || 0) + (res.data.edits_open || 0) + (res.data.content_reports_open || 0);
       render();
     });
   }
@@ -367,8 +368,13 @@
     var m = state.moderation;
     if (!m) return [el("h2", { text: "Moderation" }), el("p", { className: "state", text: "Loading…" })];
     var out = [el("h2", { text: "Moderation" })];
-    var total = m.claims.length + m.closures.length + m.edits.length;
+    var reports = m.reports || [];
+    var total = m.claims.length + m.closures.length + m.edits.length + reports.length;
     if (!total) out.push(el("p", { className: "ok", text: "Nothing waiting. Everything has been decided." }));
+    if (reports.length) {
+      out.push(el("h3", { text: "Reported content (" + reports.length + ")" }));
+      reports.forEach(function (c) { out.push(reportCard(c)); });
+    }
     if (m.claims.length) {
       out.push(el("h3", { text: "Ownership claims (" + m.claims.length + ")" }));
       m.claims.forEach(function (c) { out.push(claimCard(c)); });
@@ -412,6 +418,38 @@
     card.appendChild(el("div", { className: "actions" }, [
       el("button", { className: "button danger small", text: "Close place", onClick: function () { decide(card, c.tokens.close, "Close place"); } }),
       el("button", { className: "button quiet small", text: "Dismiss", onClick: function () { decide(card, c.tokens.dismiss, "Dismiss"); } }),
+    ]));
+    return card;
+  }
+  var REPORT_REASONS = { spam: "Spam or advertising", offensive: "Offensive or hateful", harassment: "Harassment or a threat", off_topic: "Not about this place", not_a_place: "Not a real food place", private_info: "Someone's private details", other: "Something else" };
+  // A member reported a review, a listing or an owner's reply. The card shows the
+  // thing itself; Remove takes it down (review/reply deleted, listing closed) and
+  // resolves every open report on it, Dismiss closes this one report only.
+  function reportCard(c) {
+    var kindWord = c.kind === "reply" ? "an owner's reply" : c.kind === "listing" ? "a listing" : "a review";
+    var head = c.reporter.name + " reported " + kindWord + (c.place ? " on " + c.place.name : "") + ": " + (REPORT_REASONS[c.reason] || c.reason);
+    var body = null;
+    if (!c.content) body = el("p", { className: "state", text: "Already gone — deleted by its author or an earlier decision. Only Dismiss is left." });
+    else if (c.kind === "review") body = el("div", {}, [
+      el("p", { className: "small-muted", text: "Review by " + c.content.author + " · " + c.content.rating + "★" + (c.content.dish ? " · " + c.content.dish : "") }),
+      el("p", { className: "quote", text: c.content.body || "(no text)" }),
+    ]);
+    else if (c.kind === "reply") body = el("p", { className: "quote", text: c.content.body || "(no text)" });
+    else body = el("p", { text: c.content.name + (c.content.address ? ", " + c.content.address : "") });
+    var card = el("div", { className: "card" }, [
+      el("h4", { text: head }),
+      el("p", { className: "small-muted", text: (c.place ? placeLine(c.place, c.place_id) + " · " : "") + "reported " + fmtDate(c.created_at) + (c.other_reports ? " · " + c.other_reports + " other open report" + (c.other_reports === 1 ? "" : "s") + " on it" : "") }),
+      c.note ? el("p", { text: "“" + c.note + "”" }) : null,
+      body,
+    ]);
+    var removeLabel = c.kind === "listing" ? "Close listing" : c.kind === "reply" ? "Delete reply" : "Delete review";
+    card.appendChild(el("div", { className: "actions" }, [
+      c.content ? armed(removeLabel, "Really " + removeLabel.toLowerCase() + "?", function () {
+        call({ op: "reports.remove", id: c.id }).then(function (res) { if (!res.ok) return flash(res.error, true); flash(res.data.outcome + " — " + res.data.resolved + " report" + (res.data.resolved === 1 ? "" : "s") + " resolved."); loadTab(); refreshOpenCount(); });
+      }) : null,
+      el("button", { className: "button quiet small", text: "Dismiss", onClick: function () {
+        call({ op: "reports.dismiss", id: c.id }).then(function (res) { if (!res.ok) return flash(res.error, true); flash("Report dismissed."); loadTab(); refreshOpenCount(); });
+      } }),
     ]));
     return card;
   }
