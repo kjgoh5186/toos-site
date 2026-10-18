@@ -91,6 +91,8 @@
   .adm .pill.off { background: var(--line); color: var(--muted); }
   .adm .pill.warn { background: #f6e0d6; color: var(--red); }
   .adm .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .adm .campaign { display: grid; gap: 4px; justify-items: start; margin-top: 6px; }
+  .adm .campaign-fields[hidden] { display: none; }
   .adm .card { padding: 16px 18px 14px; margin-bottom: 12px; }
   .adm .card h4 { margin: 0 0 6px; font: 600 18px/1.3 var(--serif); }
   .adm .card ul { margin: 6px 0 10px; padding-left: 20px; font-size: 15.5px; }
@@ -655,6 +657,21 @@
         codeCell.appendChild(el("button", { className: "button quiet small", text: "Generate code", onClick: function () { setCode(b, randomCode()); } }));
       }
       var window_ = [b.opens_at ? "from " + fmtDate(b.opens_at) : "", b.closes_at ? "until " + fmtDate(b.closes_at) : ""].filter(Boolean).join(" ") || "always";
+      // A dish campaign's standing, from the same scoring the awards use.
+      var campaignCell = null;
+      if (b.dish_campaign) {
+        var c = b.dish_campaign;
+        var open = !c.closed_at && (!b.opens_at || new Date(b.opens_at) <= new Date()) && (!b.closes_at || new Date(b.closes_at) >= new Date());
+        var status = c.closed_at ? "Closed out " + fmtDate(c.closed_at) : open ? "Campaign open" : (b.opens_at && new Date(b.opens_at) > new Date()) ? "Scheduled" : "Awaiting close-out";
+        campaignCell = el("div", { className: "campaign" }, [
+          el("span", { className: "pill " + (open ? "on" : "off"), text: status }),
+          el("div", { className: "id", text: "Dish campaign · " + c.threshold + " agreeing diner" + (c.threshold === 1 ? "" : "s") + " · top " + c.top_n + " at close" }),
+          el("div", { className: "id", text: c.entries + " entr" + (c.entries === 1 ? "y" : "ies") + " from " + c.recommenders + " · best " + c.best_score + " · " + c.qualifying + " past the line · " + b.campaign_awards + " awarded" }),
+          c.closed_at ? null : armed("Close out now", "End it and award the top " + c.top_n + "?", function () {
+            call({ op: "campaigns.close", id: b.id }).then(function (res) { if (!res.ok) return flash(res.error, true); flash(b.title + " closed out — " + res.data.awarded + " awarded by the campaign."); refreshBadges(); });
+          }),
+        ]);
+      }
       var holders = state.holders[b.id];
       var actions = el("div", { className: "chips" }, [
         el("button", { className: "button quiet small", text: "Edit", onClick: function () { state.editing = b; state.message = null; render(); } }),
@@ -665,7 +682,7 @@
         el("td", {}, [el("div", { text: b.title }), el("div", { className: "id", text: b.id + " · " + b.icon + (b.numbered ? " · numbered" : "") })]),
         el("td", { text: b.awarded + (b.max_awards ? " of " + b.max_awards : "") }),
         el("td", {}, [el("span", { className: "pill " + (live ? "on" : "off"), text: live ? "Code live" : "Off" }), el("div", {}, [codeCell])]),
-        el("td", { text: window_ + (b.auto_award ? " · auto" : "") }),
+        el("td", {}, [el("div", { text: window_ + (b.auto_award ? " · auto" : "") }), campaignCell]),
         el("td", {}, [actions]),
       ]);
       return holders ? [tr, holdersRow(b, holders)] : [tr];
@@ -707,7 +724,19 @@
       closes_at: el("input", { type: "datetime-local", name: "closes_at", value: toLocalInput(b.closes_at) }),
       auto_award: el("input", { type: "checkbox", name: "auto_award", checked: !!b.auto_award }),
       sort_order: el("input", { type: "number", name: "sort_order", step: "1", value: b.sort_order == null ? "100" : String(b.sort_order) }),
+      // Dish campaign rules — see 2026-10-18-dish-campaigns.sql. Once the campaign
+      // has awarded anyone it stays a campaign: the server refuses the switch-off.
+      dish_campaign: el("input", { type: "checkbox", name: "dish_campaign", checked: !!b.dish_campaign, disabled: (b.campaign_awards || 0) > 0 }),
+      dish_threshold: el("input", { type: "number", name: "dish_threshold", min: "1", step: "1", value: b.dish_campaign ? String(b.dish_campaign.threshold) : "5" }),
+      dish_top_n: el("input", { type: "number", name: "dish_top_n", min: "0", step: "1", value: b.dish_campaign ? String(b.dish_campaign.top_n) : "10" }),
     };
+    var campaignFields = el("div", { className: "grid2 campaign-fields" }, [
+      el("label", {}, ["Agreeing diners for an instant award", f.dish_threshold]),
+      el("label", {}, ["Top N awarded at close (0 = none)", f.dish_top_n]),
+    ]);
+    campaignFields.hidden = !f.dish_campaign.checked;
+    f.dish_campaign.addEventListener("change", function () { campaignFields.hidden = !f.dish_campaign.checked; f.closes_at.required = f.dish_campaign.checked; });
+    f.closes_at.required = f.dish_campaign.checked;
     f.description.value = b.description || "";
     var save = el("button", { type: "submit", className: "button", text: isNew ? "Create badge" : "Save changes" });
     var cancel = el("button", { type: "button", className: "button quiet", text: "Cancel", onClick: function () { state.editing = null; render(); } });
@@ -722,6 +751,8 @@
       ]),
       el("label", { className: "row" }, [f.numbered, "Numbered — #001, #002… in award order"]),
       el("label", { className: "row" }, [f.auto_award, "Auto-award to every new account while open and under the cap"]),
+      el("label", { className: "row" }, [f.dish_campaign, "Dish campaign — earned by recommending a dish that other diners then say they'd order again (needs a close date)"]),
+      campaignFields,
       el("div", { className: "actions" }, [save, cancel]),
     ]);
     form.addEventListener("submit", function (e) {
@@ -730,6 +761,7 @@
       call({ op: "badges.save", id: isNew ? f.id.value.trim().toLowerCase() : b.id, title: f.title.value, description: f.description.value, icon: f.icon.value,
         numbered: f.numbered.checked, max_awards: f.max_awards.value === "" ? null : Number(f.max_awards.value),
         opens_at: fromLocalInput(f.opens_at.value), closes_at: fromLocalInput(f.closes_at.value), auto_award: f.auto_award.checked, sort_order: Number(f.sort_order.value || 100),
+        dish_campaign: f.dish_campaign.checked, dish_threshold: Number(f.dish_threshold.value || 5), dish_top_n: Number(f.dish_top_n.value || 0),
       }).then(function (res) {
         save.disabled = false;
         if (!res.ok) return flash(res.error, true);
