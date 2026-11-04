@@ -246,7 +246,7 @@
     var form = el("form", {}, [
       el("label", {}, ["Email", email]),
       el("label", {}, ["Password", password]),
-      el("div", { className: "actions" }, [button]),
+      el("div", { className: "actions" }, [button, el("a", { href: "reset-password.html", text: "Forgot password?" })]),
     ]);
     form.addEventListener("submit", function (e) {
       e.preventDefault();
