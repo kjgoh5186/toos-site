@@ -461,6 +461,7 @@
       c.note ? el("p", { text: "“" + c.note + "”" }) : null,
     ]);
     card.appendChild(el("div", { className: "actions" }, [
+      el("button", { className: "button quiet small", text: "Edit listing", onClick: function () { openEditor(c.place_id); } }),
       el("button", { className: "button small", text: "Done", onClick: function () { decide(card, c.tokens.done, "Mark done"); } }),
       el("button", { className: "button quiet small", text: "Dismiss", onClick: function () { decide(card, c.tokens.dismiss, "Dismiss"); } }),
     ]));
@@ -602,12 +603,38 @@
       } })]);
     }
     var claims = d.claims.length ? el("ul", {}, d.claims.map(function (c) {
-      return el("li", { text: c.place.name + " — " + (c.rejected_at ? "rejected" : c.verified ? "verified owner" : "pending") + " · " + fmtDate(c.created_at) });
+      var live = !c.rejected_at && c.verified;
+      return el("li", {}, [
+        c.place.name + " — " + (c.rejected_at ? "rejected" : c.verified ? "verified owner" : "pending") + " · " + fmtDate(c.created_at) + " ",
+        el("button", { className: "button quiet small", text: "Open place", onClick: function () { openEditor(c.place_id); } }),
+        live ? revokeForm(c.place_id, d.name, function () { openMember(d.id); }) : null,
+      ]);
     })) : null;
+    // Rename an offensive or impersonating name instead of deleting the account.
+    var nameIn = el("input", { type: "text", name: "name", maxlength: "40", required: true, value: d.name });
+    var areaIn = el("input", { type: "text", name: "area", maxlength: "60", value: d.area || "" });
+    var saveProfile = el("button", { type: "submit", className: "button quiet small", text: "Save profile" });
+    var profileForm = el("form", {}, [
+      el("div", { className: "grid2" }, [el("label", {}, ["Display name", nameIn]), el("label", {}, ["Area", areaIn])]),
+      el("p", { className: "small-muted", text: "Their review bylines change too. Their phone shows the new name from its next start; they can still change it again in the app." }),
+      el("div", { className: "actions" }, [saveProfile]),
+    ]);
+    profileForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      saveProfile.disabled = true;
+      call({ op: "members.update", user_id: d.id, name: nameIn.value, area: areaIn.value }).then(function (res) {
+        saveProfile.disabled = false;
+        if (!res.ok) return flash(res.error, true);
+        flash("Saved " + res.data.name + "'s profile" + (res.data.bylines ? "; " + res.data.bylines + " review byline" + (res.data.bylines === 1 ? "" : "s") + " renamed." : "."));
+        openMember(d.id);
+        listMembers();
+      });
+    });
     return el("div", { className: "card" }, [
       el("h4", { text: d.name + (d.area ? " · " + d.area : "") }),
       el("p", { className: "small-muted", text: facts.join(" · ") }),
       el("p", { className: "small-muted" }, [el("code", { text: d.id })]),
+      el("h3", { text: "Profile" }), profileForm,
       el("h3", { text: "Badges" }), badges, award,
       claims ? el("h3", { text: "Owner claims" }) : null, claims,
       el("h3", { text: "Danger" }),
@@ -626,7 +653,15 @@
   // ── listings ───────────────────────────────────────────────────────────────
   function listingsView() {
     var l = state.listings;
-    var out = [el("h2", { text: "Listings shared by members" }), finder(l, "Find a listing", "listing name (empty = every listing)", loadListings)];
+    var out = [el("h2", { text: "Listings" })];
+    // Any place by id — OpenStreetMap places are not in the table below, and a
+    // suggested edit names its place by id.
+    var idInput = el("input", { type: "text", name: "place_id", placeholder: "osm-123456789 or user-…", value: l.editor ? l.editor.id : "" });
+    var byId = el("form", { className: "grid2" }, [el("label", {}, ["Edit any place by its id", idInput]), el("div", { className: "actions" }, [el("button", { type: "submit", className: "button quiet", text: "Open" })])]);
+    byId.addEventListener("submit", function (e) { e.preventDefault(); if (idInput.value.trim()) openEditor(idInput.value.trim()); });
+    out.push(byId);
+    if (l.editor) out.push(editorCard(l.editor));
+    out.push(el("h3", { text: "Shared by members" }), finder(l, "Find a listing", "listing name (empty = every listing)", loadListings));
     if (!l.rows) out.push(el("p", { className: "state", text: "Loading…" }));
     else if (!l.rows.length) out.push(nothing(l, "listing"));
     else {
@@ -639,7 +674,9 @@
           el("td", {}, [el("div", { text: p.name }), el("div", { className: "id", text: [p.category, p.area, fmtDate(p.created_at), p.photos + " photos"].filter(Boolean).join(" · ") })]),
           el("td", { text: p.owner || "(account deleted)" }), el("td", { text: String(p.reviews) }),
           el("td", { text: p.claim === "verified" ? "verified" : p.claim === "pending" ? "pending" : "" }),
-          el("td", {}, [status]), el("td", {}, [act]),
+          el("td", {}, [status]), el("td", {}, [el("div", { className: "chips" }, [
+            el("button", { className: "button quiet small", text: "Edit", onClick: function () { openEditor(p.id); } }), act,
+          ])]),
         ]);
       })));
       out.push(pager(l, loadListings));
@@ -647,6 +684,112 @@
     return out;
   }
   function loadListings() { return loadPage(state.listings, "listings.list"); }
+
+  // ── listing editor ─────────────────────────────────────────────────────────
+  // The server says where the place's details come from (an app listing, the
+  // OpenStreetMap mirror, an override on top) and the form edits what diners see.
+  function openEditor(id) {
+    state.listings.editor = { id: id, data: null };
+    if (state.tab !== "listings") { location.hash = "#listings"; } else render();
+    window.scrollTo(0, 0);
+    call({ op: "listings.get", place_id: id }).then(function (res) {
+      if (!state.listings.editor || state.listings.editor.id !== id) return;
+      if (!res.ok) { state.listings.editor = null; return flash(res.error, true); }
+      state.listings.editor.data = res.data; render();
+    });
+  }
+  function hoursText(rows) { return (rows || []).map(function (r) { return r.label + " | " + r.value; }).join("\n"); }
+  function parseHours(text) {
+    return text.split("\n").map(function (line) { return line.trim(); }).filter(Boolean).map(function (line) {
+      var i = line.indexOf("|");
+      return i < 0 ? { label: "Hours", value: line } : { label: line.slice(0, i).trim(), value: line.slice(i + 1).trim() };
+    });
+  }
+  function editorCard(ed) {
+    var close = el("button", { className: "button quiet small", text: "Close", onClick: function () { state.listings.editor = null; render(); } });
+    if (!ed.data) return el("div", { className: "card" }, [el("p", { className: "state", text: "Opening " + ed.id + "…" }), close]);
+    var d = ed.data, src = d.source || {}, ov = d.override;
+    var isListing = src.kind === "listing";
+    var shown = ov ? { name: ov.name, address: ov.address } : { name: src.name || "", address: src.address || "" };
+    var where = isListing ? "an app listing" : src.kind === "osm" ? "OpenStreetMap" : "no source we can read";
+    var lines = [el("p", { className: "small-muted" }, [el("code", { text: d.id }), " · from " + where])];
+    if (ov) lines.push(el("p", { className: "small-muted", text: (ov.by_owner ? "The verified owner (" + ov.by + ") has published edits" : "Edited before by " + ov.by) + " — the name, address and hours below are those edits, not " + where + "." }));
+    if (d.claim) lines.push(el("p", { className: "small-muted", text: "Owner claim: " + d.claim.name + ", " + d.claim.state + " since " + fmtDate(d.claim.created_at) + "." }));
+    if (ov && ov.by_owner) lines.push(el("p", { className: "small-muted", text: "Heads-up: the owner's next save in the app replaces whatever you change here." }));
+
+    var f = {
+      name: el("input", { type: "text", name: "name", maxlength: "120", required: true, value: shown.name }),
+      address: el("input", { type: "text", name: "address", maxlength: "300", value: shown.address }),
+    };
+    var fields = [el("label", {}, ["Name", f.name]), el("label", {}, ["Address", f.address])];
+    if (ov || !isListing) {
+      var start = ov ? hoursText(ov.hours) : (src.opening_hours ? "Hours | " + src.opening_hours : "");
+      f.hours = el("textarea", { name: "hours", rows: "4", placeholder: "Mon – Fri | 8:00 AM – 10:00 PM" });
+      f.hours.value = start;
+      fields.push(el("label", {}, ["Hours shown (one row per line: label | hours; empty = not listed)", f.hours]));
+      if (!ov) fields.push(el("p", { className: "small-muted", text: "Saving creates an override under your account; the open-now badge keeps using OpenStreetMap's hours (" + (src.opening_hours || "none") + ")." }));
+    } else {
+      f.opening_hours = el("input", { type: "text", name: "opening_hours", maxlength: "200", placeholder: "Mo-Fr 08:00-22:00; Sa-Su 09:00-18:00", value: src.opening_hours || "" });
+      fields.push(el("label", {}, ["Opening hours (OpenStreetMap syntax; drives the open-now badge)", f.opening_hours]));
+    }
+    if (isListing) {
+      f.area = el("input", { type: "text", name: "area", maxlength: "80", value: src.area || "" });
+      f.phone = el("input", { type: "text", name: "phone", maxlength: "40", value: src.phone || "" });
+      f.description = el("textarea", { name: "description", maxlength: "1000" });
+      f.description.value = src.description || "";
+      fields.push(el("div", { className: "grid2" }, [el("label", {}, ["Area", f.area]), el("label", {}, ["Phone", f.phone])]), el("label", {}, ["About", f.description]));
+    }
+    var save = el("button", { type: "submit", className: "button small", text: "Save changes" });
+    var form = el("form", {}, fields.concat([el("div", { className: "actions" }, [save, close])]));
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var body = { op: "listings.edit", place_id: d.id, name: f.name.value, address: f.address.value };
+      if (f.hours) body.hours = parseHours(f.hours.value);
+      if (f.opening_hours) body.opening_hours = f.opening_hours.value;
+      if (f.area) { body.area = f.area.value; body.phone = f.phone.value; body.description = f.description.value; }
+      save.disabled = true;
+      call(body).then(function (res) {
+        save.disabled = false;
+        if (!res.ok) return flash(res.error, true);
+        flash(res.data.changed.length ? "Saved " + f.name.value + " (" + res.data.changed.join(", ") + "). Phones show it on their next refresh." : "Nothing changed.");
+        openEditor(d.id);
+        if (state.listings.rows) loadListings();
+      });
+    });
+
+    var extras = [];
+    if (ov && !ov.by_owner) extras.push(armed("Restore original details", "Really drop these edits?", function (btn) {
+      call({ op: "listings.restore", place_id: d.id }).then(function (res) { if (!res.ok) { btn.disabled = false; return flash(res.error, true); } flash("Dropped the edits; " + d.id + " shows " + where + " again (phones keep the old text until they restart)."); openEditor(d.id); });
+    }));
+    if (d.claim && d.claim.state === "verified") extras.push(revokeForm(d.id, d.claim.name, function () { openEditor(d.id); }));
+
+    return el("div", { className: "card" }, [el("h4", { text: "Edit " + (shown.name || d.id) })].concat(lines, [form], extras.length ? [el("h3", { text: "More" })].concat(extras) : []));
+  }
+  // Takes a verified owner's ownership back: the claim turns REJECTED with this
+  // reason (what the owner reads in the app), optionally dropping their edits.
+  function revokeForm(placeId, ownerName, after) {
+    var wrap = el("div", {});
+    var open = el("button", { className: "button quiet small", text: "Revoke " + ownerName + "'s ownership…" });
+    open.addEventListener("click", function () {
+      var reason = el("input", { type: "text", name: "reason", maxlength: "200", value: "Ownership was withdrawn by Toos" });
+      var drop = el("input", { type: "checkbox", name: "remove_edits" });
+      var go = armed("Revoke ownership", "Really revoke?", function (btn) {
+        call({ op: "claims.revoke", place_id: placeId, reason: reason.value, remove_edits: drop.checked }).then(function (res) {
+          if (!res.ok) { btn.disabled = false; return flash(res.error, true); }
+          flash("Revoked " + ownerName + "'s ownership" + (res.data.edits_removed ? " and removed their published edits." : ". Their published edits stay."));
+          after();
+        });
+      });
+      wrap.replaceChildren(el("div", { className: "panel" }, [
+        el("p", { text: ownerName + " stops being the verified owner. Their app shows the claim as rejected with this reason, and they may file again." }),
+        el("label", {}, ["Reason the owner reads", reason]),
+        el("label", { className: "row" }, [drop, el("span", { text: "Also remove their published shop edits (name, address, hours, menu, photos)" })]),
+        el("div", { className: "actions" }, [go, el("button", { type: "button", className: "button quiet small", text: "Cancel", onClick: function () { wrap.replaceChildren(open); } })]),
+      ]));
+    });
+    wrap.appendChild(open);
+    return wrap;
+  }
 
   // ── reviews ────────────────────────────────────────────────────────────────
   function reviewsView() {
