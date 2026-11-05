@@ -261,6 +261,11 @@
           note.textContent = /invalid login/i.test(m) ? "Wrong email or password." : /not confirmed/i.test(m) ? "Confirm your email first: open the link Toos sent you, then sign in." : m;
           return;
         }
+        // The server signs an old password in but says when it no longer meets
+        // the policy (8+ characters, a letter and a number, since 2026-11-05).
+        if (r.data && r.data.weakPassword) {
+          state.message = { text: "Your password no longer meets the rules (at least 8 characters, with a letter and a number). Sign out, use \"Forgot password?\" and choose a stronger one.", error: true };
+        }
         start();
       });
     });
