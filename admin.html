@@ -868,7 +868,7 @@
         el("td", {}, [el("div", { text: b.title }), el("div", { className: "id", text: b.id + " · " + b.icon + (b.numbered ? " · numbered" : "") })]),
         el("td", { text: b.awarded + (b.max_awards ? " of " + b.max_awards : "") }),
         el("td", {}, [el("span", { className: "pill " + (live ? "on" : "off"), text: live ? "Code live" : "Off" }), el("div", {}, [codeCell])]),
-        el("td", {}, [el("div", { text: window_ + (b.auto_award ? " · auto" : "") }), campaignCell]),
+        el("td", {}, [el("div", { text: window_ + (b.auto_award ? (b.auto_award_on === "review" ? " · earned by first review" : " · auto on sign-up") : "") }), campaignCell]),
         el("td", {}, [actions]),
       ]);
       return holders ? [tr, holdersRow(b, holders)] : [tr];
@@ -908,7 +908,12 @@
       max_awards: el("input", { type: "number", name: "max_awards", min: "1", step: "1", value: b.max_awards == null ? "" : String(b.max_awards), placeholder: "no cap" }),
       opens_at: el("input", { type: "datetime-local", name: "opens_at", value: toLocalInput(b.opens_at) }),
       closes_at: el("input", { type: "datetime-local", name: "closes_at", value: toLocalInput(b.closes_at) }),
-      auto_award: el("input", { type: "checkbox", name: "auto_award", checked: !!b.auto_award }),
+      // How the badge is earned without anyone's hand — see 2026-11-08-founding-foodie-review.sql.
+      earned_by: el("select", { name: "earned_by" }, [
+        el("option", { value: "off", text: "Never — by hand or by code only", selected: !b.auto_award }),
+        el("option", { value: "signup", text: "On sign-up — every new account while open and under the cap", selected: !!b.auto_award && b.auto_award_on !== "review" }),
+        el("option", { value: "review", text: "On a first review worth reading — a rating with 20+ characters or a photo, once per member", selected: !!b.auto_award && b.auto_award_on === "review" }),
+      ]),
       sort_order: el("input", { type: "number", name: "sort_order", step: "1", value: b.sort_order == null ? "100" : String(b.sort_order) }),
       // Dish campaign rules — see 2026-10-18-dish-campaigns.sql. Once the campaign
       // has awarded anyone it stays a campaign: the server refuses the switch-off.
@@ -936,7 +941,7 @@
         el("label", {}, ["Sort order (lower shows first)", f.sort_order]),
       ]),
       el("label", { className: "row" }, [f.numbered, "Numbered — #001, #002… in award order"]),
-      el("label", { className: "row" }, [f.auto_award, "Auto-award to every new account while open and under the cap"]),
+      el("label", {}, ["Earned automatically (staff and Google's review account never are)", f.earned_by]),
       el("label", { className: "row" }, [f.dish_campaign, "Dish campaign — earned by recommending a dish that other diners then say they'd order again (needs a close date)"]),
       campaignFields,
       el("div", { className: "actions" }, [save, cancel]),
@@ -946,7 +951,8 @@
       save.disabled = true;
       call({ op: "badges.save", id: isNew ? f.id.value.trim().toLowerCase() : b.id, title: f.title.value, description: f.description.value, icon: f.icon.value,
         numbered: f.numbered.checked, max_awards: f.max_awards.value === "" ? null : Number(f.max_awards.value),
-        opens_at: fromLocalInput(f.opens_at.value), closes_at: fromLocalInput(f.closes_at.value), auto_award: f.auto_award.checked, sort_order: Number(f.sort_order.value || 100),
+        opens_at: fromLocalInput(f.opens_at.value), closes_at: fromLocalInput(f.closes_at.value),
+        auto_award: f.earned_by.value !== "off", auto_award_on: f.earned_by.value === "review" ? "review" : "signup", sort_order: Number(f.sort_order.value || 100),
         dish_campaign: f.dish_campaign.checked, dish_threshold: Number(f.dish_threshold.value || 5), dish_top_n: Number(f.dish_top_n.value || 0),
       }).then(function (res) {
         save.disabled = false;
