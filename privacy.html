@@ -112,7 +112,7 @@
             <td data-label="Who sees it">The proof photos are stored in a private area readable only by us, and are deleted as soon as the claim is approved or rejected. Your owner edits and replies are public, marked as the owner’s.</td>
           </tr>
           <tr>
-            <td data-label="Data">Location<small>Your phone’s position while the app is open, precise or approximate as you allow in Android.</small></td>
+            <td data-label="Data">Location<small>Your phone’s position while the app is open, precise or approximate as you allow in your phone’s settings.</small></td>
             <td data-label="Why">Finding and sorting places near you, and the distance check above. Each nearby search sends your position to our server, which answers and does not keep it; the only stored trace is the claim distance.</td>
             <td data-label="Who sees it">Never shown to other users. Never collected in the background.</td>
           </tr>
@@ -133,7 +133,7 @@
           </tr>
         </tbody>
       </table>
-      <p class="note">Everything you write or save is also kept on your phone so the app works offline. You can wipe it with <i>Settings › Data › Clear my data</i>, or by clearing the app’s data in Android.</p>
+      <p class="note">Everything you write or save is also kept on your phone so the app works offline. You can wipe it with <i>Settings › Data › Clear my data</i>, by clearing the app’s data in Android’s settings, or by deleting the app from an iPhone.</p>
     </section>
 
     <section id="not">
@@ -157,9 +157,14 @@
           <p>Our database, sign-in, file storage and server functions run on Supabase, which hosts them on Amazon Web Services. Everything in section 2 is stored there. Account emails are sent through Supabase on our behalf.</p>
         </div>
         <div class="card provider">
-          <p class="role">Maps and place details</p>
+          <p class="role">Place details, and maps on Android</p>
           <h3>Google Maps Platform</h3>
-          <p>The map is drawn by the Google Maps SDK for Android, and Google’s Places API supplies the Google rating, price level and photos shown for places in Search. When you view a place, its name and area are sent to Google to look it up; the map and Places SDKs also send Google standard device information as described in <a href="https://policies.google.com/privacy">Google’s privacy policy</a>. Your Toos account details are not sent to Google.</p>
+          <p>On Android and iPhone, Google’s Places API supplies the Google rating, price level and photos shown for places in Search. When you view a place, its name and area are sent to Google to look it up. On Android the map is also drawn by the Google Maps SDK, and address search uses Google Places; the map and Places SDKs send Google standard device information as described in <a href="https://policies.google.com/privacy">Google’s privacy policy</a>. Your Toos account details are not sent to Google.</p>
+        </div>
+        <div class="card provider">
+          <p class="role">Maps on iPhone</p>
+          <h3>Apple Maps</h3>
+          <p>On iPhone the map is drawn by Apple Maps, which also answers address searches and names the neighbourhood you are in. For that, the area of the map you are looking at, the address you type and your position are sent to Apple, as described in <a href="https://www.apple.com/legal/privacy/">Apple’s privacy policy</a>. Your Toos account details are not sent to Apple.</p>
         </div>
         <div class="card provider">
           <p class="role">Place data</p>
@@ -177,7 +182,7 @@
 
     <section id="where">
       <h2><span class="num">05</span>Where your data lives</h2>
-      <p>Your account and everything you share are stored on Supabase&#8217;s servers outside Malaysia (see Supabase above). Google and OpenStreetMap servers may also be in other countries. By using Toos you agree to your data being processed in these places.</p>
+      <p>Your account and everything you share are stored on Supabase&#8217;s servers outside Malaysia (see Supabase above). Google, Apple and OpenStreetMap servers may also be in other countries. By using Toos you agree to your data being processed in these places.</p>
     </section>
 
     <section id="retention">
@@ -194,7 +199,7 @@
     <section id="rights">
       <h2><span class="num">07</span>Your choices and rights</h2>
       <ul>
-        <li><b>Location:</b> grant precise or approximate location, or none, in Android’s app settings at any time. Without it, the app measures from a fixed default position in Petaling Jaya and you can search any area by typing an address.</li>
+        <li><b>Location:</b> grant precise or approximate location, or none, at any time: in Android’s app settings, or on iPhone under <i>Settings › Privacy &amp; Security › Location Services › Toos</i>. Without it, the app measures from a fixed default position in Petaling Jaya and you can search any area by typing an address.</li>
         <li><b>Saved places:</b> private unless you switch on <i>Show my saved places</i>; switching it off hides them again at once.</li>
         <li><b>Correct or remove what you shared:</b> edit your profile under <i>Me</i>; delete your own reviews and places from their pages.</li>
         <li><b>Delete your account:</b> <i>Me › Settings › Delete account</i> removes your account and its data straight away, or ask us via <a href="delete-account.html">the account-deletion page</a>.</li>
