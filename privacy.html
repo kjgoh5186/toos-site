@@ -168,8 +168,8 @@
         </div>
         <div class="card provider">
           <p class="role">Place data</p>
-          <h3>OpenStreetMap (Overpass API)</h3>
-          <p>Places in Search come from OpenStreetMap. Usually the app reads them from our own copy on Supabase; when you search an area we have not mirrored, the app asks a public Overpass API server directly, which then receives your search position and IP address. See the <a href="https://wiki.osmfoundation.org/wiki/Privacy_Policy">OSM Foundation privacy policy</a>.</p>
+          <h3>OpenStreetMap (Overpass API and Nominatim)</h3>
+          <p>Places in Search come from OpenStreetMap. Usually the app reads them from our own copy on Supabase; when you search an area we have not mirrored, the app asks a public Overpass API server directly, which then receives your search position and IP address. When a place you reviewed or saved lies outside our copy, the app looks up its name and position by its OpenStreetMap number on Nominatim, which receives that number and your IP address, not who you are. See the <a href="https://wiki.osmfoundation.org/wiki/Privacy_Policy">OSM Foundation privacy policy</a>.</p>
         </div>
         <div class="card provider">
           <p class="role">Email delivery</p>
